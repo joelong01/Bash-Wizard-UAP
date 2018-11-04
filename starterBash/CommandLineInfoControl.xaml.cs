@@ -1,23 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System.ComponentModel;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
 namespace starterBash
 {
-    public sealed partial class CommandLineInfoControl : UserControl
+
+
+    public sealed partial class CommandLineInfoControl : UserControl, INotifyPropertyChanged
     {
 
         public CommandLineInfoControl()
@@ -25,14 +17,50 @@ namespace starterBash
             this.InitializeComponent();
         }
 
-        public static readonly DependencyProperty ParameterInfoProperty = DependencyProperty.Register("ParameterInfo", typeof(CommandLineInfo), typeof(CommandLineInfoControl), new PropertyMetadata(new CommandLineInfo()));
+        public static readonly DependencyProperty ParameterInfoProperty = DependencyProperty.Register("ParameterInfo", typeof(CommandLineInfo), typeof(CommandLineInfoControl), new PropertyMetadata("", ParameterInfoChanged));
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public CommandLineInfo ParameterInfo
         {
             get => (CommandLineInfo)GetValue(ParameterInfoProperty);
             set => SetValue(ParameterInfoProperty, value);
         }
+        private static void ParameterInfoChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as CommandLineInfoControl;
+            var depPropValue = (CommandLineInfo)e.NewValue;
+            CommandLineInfo oldVal = null;
+            if (e.OldValue.GetType() == typeof(CommandLineInfo))
+            {
+                oldVal = e.OldValue as CommandLineInfo;
+            }
+            depPropClass?.SetParameterInfo(depPropValue, oldVal);
+        }
+        private void SetParameterInfo(CommandLineInfo newValue, CommandLineInfo oldValue)
+        {
+            if (oldValue != null)
+            {
+                oldValue.PropertyChanged -= CommandLinePropertyChanged;
+            }
+
+            newValue.PropertyChanged += CommandLinePropertyChanged;
+
+        }
+
+        private void CommandLinePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            PropertyChanged?.Invoke(sender, e);
+        }
+
+        public override string ToString()
+        {
+            return ParameterInfo.Serialize();
+        }
+
+
 
     }
 
-       
+
 }

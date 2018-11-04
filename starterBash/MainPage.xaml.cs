@@ -1,20 +1,47 @@
-﻿using System.Collections.ObjectModel;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace starterBash
 {
+
+    public class MainPageModel
+    {
+        public string ScriptName { get; set; } = null;
+        public List<CommandLineInfo> Parameters { get; set; } = new List<CommandLineInfo>();
+        public MainPageModel(string name, ObservableCollection<CommandLineInfoControl> list)
+        {
+            ScriptName = name;
+            if (list != null)
+            {
+                foreach (var c in list)
+                {
+                    Parameters.Add(c.ParameterInfo);
+                }
+            }
+        }
+    }
+
+
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     public sealed partial class MainPage : Page
     {
-
-        public ObservableCollection<CommandLineInfoControl> ControlList = new ObservableCollection<CommandLineInfoControl>();
+        [JsonProperty]
+        public ObservableCollection<CommandLineInfoControl> ControlList { get; set; } = new ObservableCollection<CommandLineInfoControl>();
         private CommandLineInfoControl _selectedItem = null;
-        
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -22,6 +49,14 @@ namespace starterBash
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public string Json
+        {
+            get => (string)GetValue(JsonProperty);
+            set => SetValue(JsonProperty, value);
+        }
+
+        [JsonProperty]
         public string ScriptName
         {
             get => (string)GetValue(ScriptNameProperty);
@@ -34,12 +69,21 @@ namespace starterBash
         }
 
 
+
+
         private void OnAddParameter(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             CommandLineInfoControl ctrl = new CommandLineInfoControl();
             ControlList.Add(ctrl);
+            ctrl.PropertyChanged += ParameterPropertyChanged;
 
 
+        }
+
+        private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            BashScript = GenerateBash();
+            Json = Serialize();
         }
 
         private void OnDeleteParameter(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -59,7 +103,7 @@ namespace starterBash
             }
         }
 
-        private void OnUpdate(object sender, RoutedEventArgs e)
+        private string GenerateBash()
         {
             string s = "";
             string nl = "\n";
@@ -141,7 +185,7 @@ namespace starterBash
             s += $"\tcase \"$1\" in{nl}";
             foreach (var param in ControlList)
             {
-                
+
                 s += $"\t\t-{param.ParameterInfo.ShortParam}|--{param.ParameterInfo.LongParam}){nl}";
                 s += $"\t\t{param.ParameterInfo.VarName}=\"{param.ParameterInfo.SetVal}\"{nl}";
                 s += $"\t\tshift ";
@@ -158,7 +202,7 @@ namespace starterBash
             s += $"\t--){nl}\t\tshift{nl}\t\tbreak{nl}\t;;{nl}\t\t*){nl}\t\techo \"Invalid option $1 $2\"{nl}\t\texit 3{nl}\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}";
             string shortString = "";
             foreach (var param in ControlList)
-            { 
+            {
                 if (param.ParameterInfo.Required)
                 {
                     shortString += $"[-z \"${{{param.ParameterInfo.VarName}}}\" ] || ";
@@ -169,7 +213,7 @@ namespace starterBash
                 shortString = shortString.Substring(0, shortString.Length - " || ".Length);
                 s += $"{shortString}";
             }
-           
+
 
             s += $"]; then{nl}";
             s += $"\tusage{nl}";
@@ -180,7 +224,14 @@ namespace starterBash
 
             s += $"# start writing you script!{nl}{nl}";
 
-            BashScript = s;
+            return s;
+        }
+
+        private void OnUpdate(object sender, RoutedEventArgs e)
+        {
+
+
+            BashScript = GenerateBash();
         }
 
         private void OnTest(object sender, RoutedEventArgs e)
@@ -194,13 +245,14 @@ namespace starterBash
                 Default = "",
                 AcceptsValue = true,
                 LongParam = "rource-group",
-                Required=true
-                
+                Required = true
+
             };
 
             ctrl.ParameterInfo = info;
-
+            ctrl.PropertyChanged += ParameterPropertyChanged;
             ControlList.Add(ctrl);
+            
 
             ctrl = new CommandLineInfoControl();
             info = new CommandLineInfo
@@ -216,7 +268,7 @@ namespace starterBash
             };
 
             ctrl.ParameterInfo = info;
-
+            ctrl.PropertyChanged += ParameterPropertyChanged;
             ControlList.Add(ctrl);
 
             ctrl = new CommandLineInfoControl();
@@ -233,12 +285,109 @@ namespace starterBash
             };
 
             ctrl.ParameterInfo = info;
-
-
+            ctrl.PropertyChanged += ParameterPropertyChanged;
             ControlList.Add(ctrl);
 
             ScriptName = "./createResourceGroup.sh";
+            Json = Serialize();
+            BashScript = GenerateBash();
+        }
+
+        private string Serialize()
+        {
+            MainPageModel model = new MainPageModel(ScriptName, ControlList);
+            return JsonConvert.SerializeObject(model, Formatting.Indented);
+        }
+
+        private void Deserialize()
+        {
 
         }
+
+        private void OnSerialize(object sender, RoutedEventArgs e)
+        {
+            //MainPageModel model = new MainPageModel(ScriptName, ControlList);
+            //Json = JsonConvert.SerializeObject(model, Formatting.Indented);
+
+            //var result = JsonConvert.DeserializeObject<MainPageModel>(BashScript);
+            //foreach (var c in result.ControlList)
+            //{
+            //    this.ControlList.Add(c);
+            //}
+
+            //ScriptName = result.ScriptName;
+        }
+
+        private async void OnSave(object sender, RoutedEventArgs e)
+        {
+            var savePicker = new FileSavePicker
+            {
+                SuggestedStartLocation =
+                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
+            };
+            savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
+            savePicker.SuggestedFileName = $"{ScriptName}.param";
+            Windows.Storage.StorageFile file = await savePicker.PickSaveFileAsync();
+            string toSave = Serialize();
+            if (file != null)
+            {
+                await FileIO.WriteTextAsync(file, toSave);
+
+            }
+        }
+
+        private async void OnOpen(object sender, RoutedEventArgs e)
+        {
+            var picker = new FileOpenPicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                ViewMode = PickerViewMode.List
+
+            };
+
+            picker.FileTypeFilter.Add(".param");
+            StorageFile file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                this.Json = await FileIO.ReadTextAsync(file);
+
+                ControlList.Clear();
+                var result = JsonConvert.DeserializeObject<MainPageModel>(this.Json);
+                if (result != null)
+                {
+                    foreach (var c in result.Parameters)
+                    {
+                        var ctrl = new CommandLineInfoControl()
+                        {
+                            ParameterInfo = c
+                        };
+
+                        ControlList.Add(ctrl);
+                    }
+                    ScriptName = result.ScriptName;
+                }
+            }
+
+        }
+
+        private void Text_GotFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+            tb.SelectAll();
+        }
+
+
+        //var result = JsonConvert.DeserializeObject<JArray> (BashScript);
+        //foreach (var item in result)
+        //{
+        //    CommandLineInfo info = JsonConvert.DeserializeObject<CommandLineInfo>(item.ToString());
+        //    CommandLineInfoControl ctrl = new CommandLineInfoControl
+        //    {
+        //        ParameterInfo = info
+        //    };
+        //    ControlList.Add(ctrl);
+        //}
+
+
     }
 }
