@@ -10,13 +10,19 @@ namespace starterBash
 
         public string Serialize()
         {
-            return StaticHelpers.SerializeObject<CommandLineInfo>(this, SaveNames, "=", "\n\r");
+            return StaticHelpers.SerializeObject<CommandLineInfo>(this, SaveNames, "=", "|");
         }
 
         public void Deserialize(string s)
         {
-            this.DeserializeObject<CommandLineInfo>(s, "=", "\n\r");
+            this.DeserializeObject<CommandLineInfo>(s, "=", "|");
         }
+
+        public override string ToString()
+        {
+            return Serialize();
+        }
+
         public CommandLineInfo(string s)
         {
             Deserialize(s);

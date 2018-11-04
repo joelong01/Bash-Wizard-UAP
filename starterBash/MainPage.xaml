@@ -10,6 +10,7 @@
     <Page.Resources>
 
     </Page.Resources>
+    
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,16 +18,26 @@
             <RowDefinition Height="75*"/>
             <RowDefinition Height="100*"/>
         </Grid.RowDefinitions>
-        
+
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
             <TextBlock Text="Script File Name: " FontSize="20" />
             <TextBox FontSize="20" Margin="10,0,0,0" Width="250" VerticalAlignment="Center" Text="{x:Bind ScriptName, Mode=TwoWay}" />
             <Button Content="Add Parameter" Click="OnAddParameter" Margin="10,0,0,0"/>
             <Button Content="Delete  Parameter" Click="OnDeleteParameter" Margin="10,0,0,0"/>
             <Button Content="Update" Click="OnUpdate" Margin="10,0,0,0"/>
-            <Button Content="Test" Click="OnTest" Margin="10,0,0,0"/>
+            <Button Content="Save" Click="OnSave" Margin="10,0,0,0"/>
+            <Button Content="Open" Click="OnOpen" Margin="10,0,0,0"/>
+            <Button Content="Test" Click="OnTest" Margin="100,0,0,0"/>
+            <Button Content="Serialize" Click="OnSerialize" Margin="10,0,0,0"/>
         </StackPanel>
         <ListBox Grid.Row="1" ItemsSource="{x:Bind ControlList }" SelectionChanged="OnSelectionChanged" />
-        <TextBox Text="{x:Bind BashScript, Mode=OneWay}" FontFamily="Consolas" FontSize="12" Grid.Row="2" ScrollViewer.VerticalScrollBarVisibility="Visible" AcceptsReturn="True"/>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{x:Bind BashScript, Mode=OneWay}" FontFamily="Consolas" FontSize="12"  ScrollViewer.VerticalScrollBarVisibility="Visible" AcceptsReturn="True" Grid.Column="0" GotFocus="Text_GotFocus" />
+            <TextBox Text="{x:Bind Json, Mode=OneWay}" FontFamily="Consolas" FontSize="12"  ScrollViewer.VerticalScrollBarVisibility="Visible" AcceptsReturn="True" Grid.Column="1" />
+        </Grid>
     </Grid>
 </Page>
