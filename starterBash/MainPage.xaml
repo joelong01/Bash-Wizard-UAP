@@ -7,8 +7,26 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+
+    </Page.Resources>
 
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="75*"/>
+            <RowDefinition Height="100*"/>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Script File Name: " FontSize="20" />
+            <TextBox FontSize="20" Margin="10,0,0,0" Width="250" VerticalAlignment="Center" Text="{x:Bind ScriptName, Mode=TwoWay}" />
+            <Button Content="Add Parameter" Click="OnAddParameter" Margin="10,0,0,0"/>
+            <Button Content="Delete  Parameter" Click="OnDeleteParameter" Margin="10,0,0,0"/>
+            <Button Content="Update" Click="OnUpdate" Margin="10,0,0,0"/>
+            <Button Content="Test" Click="OnTest" Margin="10,0,0,0"/>
+        </StackPanel>
+        <ListBox Grid.Row="1" ItemsSource="{x:Bind ControlList }" SelectionChanged="OnSelectionChanged" />
+        <TextBox Text="{x:Bind BashScript, Mode=OneWay}" FontFamily="Consolas" FontSize="12" Grid.Row="2" ScrollViewer.VerticalScrollBarVisibility="Visible" AcceptsReturn="True"/>
     </Grid>
 </Page>

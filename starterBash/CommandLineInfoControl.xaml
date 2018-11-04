@@ -1,0 +1,72 @@
+﻿<UserControl
+    x:Class="starterBash.CommandLineInfoControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:starterBash"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" Height="50" Width="1000">
+
+    <Control.Resources>
+        <Style TargetType="TextBlock" x:Key="KvpTextBlock">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="0, 0, 0, 0" />
+            <!--<Setter Property="Foreground" Value="White" />-->
+        </Style>
+        <Style TargetType="TextBox" x:Key="KvpTextBox">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            
+            <!--<Setter Property="Foreground" Value="White" />-->
+        </Style>
+
+    </Control.Resources>
+    
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="7*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="6*" />
+            <ColumnDefinition Width="8*" />
+            <ColumnDefinition Width="6*" />
+            <ColumnDefinition Width="6*" />
+            <ColumnDefinition Width="7*" />
+            <ColumnDefinition Width="10*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Text="Short Name: " Style="{StaticResource KvpTextBlock}" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Right" />
+        <TextBox Text="{x:Bind ParameterInfo.ShortParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" Grid.Row="0" Grid.Column="1"  HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+        <TextBlock Text="Long Name: " HorizontalAlignment="Right" Style="{StaticResource KvpTextBlock}"  Grid.Row="0" Grid.Column="2"/>
+        <TextBox Text="{x:Bind ParameterInfo.LongParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" HorizontalAlignment="Stretch" VerticalAlignment="Center"  Grid.Row="0" Grid.Column="3"/>
+        <CheckBox IsChecked="{x:Bind ParameterInfo.AcceptsValue, Mode=TwoWay}" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Foreground="White">
+            <TextBlock Text="Requires Input string" Style="{StaticResource KvpTextBlock}" VerticalAlignment="Center" Margin="0,-10,0,0" />
+        </CheckBox>
+
+        <TextBlock Text="Variable Name: " HorizontalAlignment="Right"  Grid.Row="0" Grid.Column="6" Style="{StaticResource KvpTextBlock}"/>
+        <TextBox Text="{x:Bind ParameterInfo.VarName, Mode=TwoWay}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Row="0" Grid.Column="7" Grid.ColumnSpan="2" Style="{StaticResource KvpTextBox}"/>
+
+        <TextBlock Text="Default: " HorizontalAlignment="Right" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Style="{StaticResource KvpTextBlock}"/>
+        <TextBox Text="{x:Bind ParameterInfo.Default, Mode=TwoWay}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Row="1" Grid.Column="1" Style="{StaticResource KvpTextBox}" Grid.ColumnSpan="2"/>
+
+        <TextBlock Text="Description: " HorizontalAlignment="Right"  Grid.Row="1" Grid.Column="3" Style="{StaticResource KvpTextBlock}"/>
+        <TextBox Text="{x:Bind ParameterInfo.Description, Mode=TwoWay}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Style="{StaticResource KvpTextBox}"  Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2"/>
+
+        <CheckBox IsChecked="{x:Bind ParameterInfo.Required, Mode=TwoWay}" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Foreground="White">
+            <TextBlock Text="Required" Style="{StaticResource KvpTextBlock}" VerticalAlignment="Center" Margin="0,-10,0,0" />
+        </CheckBox>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="7">
+            <TextBlock Text="if Set : " HorizontalAlignment="Right"  Grid.Row="1" Grid.Column="3" Style="{StaticResource KvpTextBlock}"/>
+            <TextBox Text="{x:Bind ParameterInfo.SetVal, Mode=TwoWay}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Style="{StaticResource KvpTextBox}"  Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2"/>
+        </StackPanel>
+
+    </Grid>
+</UserControl>
