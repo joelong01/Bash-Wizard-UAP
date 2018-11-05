@@ -151,9 +151,18 @@ namespace starterBash
 
             sb.Append($"\" 1>&2 {nl} ");
             sb.Append($"\techo \"\"{nl}");
+            string required = "";
             foreach (var param in Parameters)
             {
-                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-30} {param.Description}\"{nl}");
+                if (param.Required)
+                {
+                    required = "(Required)";
+                }
+                else
+                {
+                    required = "(Optional)";
+                }
+                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-20} {required,-15} {param.Description}\"{nl}");
             }
             sb.Append($"\techo \"\"{nl}");
             sb.Append($"\texit 1{nl}");
