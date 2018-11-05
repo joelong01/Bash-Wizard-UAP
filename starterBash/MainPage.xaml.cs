@@ -150,11 +150,12 @@ namespace starterBash
             }
 
             sb.Append($"\" 1>&2 {nl} ");
+            sb.Append($"\techo \"\"{nl}");
             foreach (var param in Parameters)
             {
                 sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-30} {param.Description}\"{nl}");
             }
-
+            sb.Append($"\techo \"\"{nl}");
             sb.Append($"\texit 1{nl}");
             sb.Append($"}}{nl}{nl}");
             sb.Append($"# input variables {nl}");
@@ -199,9 +200,9 @@ namespace starterBash
 
             sb.Append($"# -use ! and PIPESTATUS to get exit code with errexit set{nl}");
             sb.Append($"# -temporarily store output to be able to check for errors{nl}");
-            sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out “--options”){nl}");
+            sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out \"--options\"){nl}");
             sb.Append($"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}");
-            sb.Append($"! PARSED=$(getopt--options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
+            sb.Append($"! PARSED=$(getopt --options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
             sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}");
             sb.Append($"\t# e.g. return value is 1{nl}");
             sb.Append($"\t# then getopt has complained about wrong arguments to stdout{nl}");
@@ -221,8 +222,8 @@ namespace starterBash
             {
 
                 sb.Append($"\t\t-{param.ShortParam}|--{param.LongParam}){nl}");
-                sb.Append($"\t\t{param.VarName}=\"{param.SetVal}\"{nl}");
-                sb.Append($"\t\tshift ");
+                sb.Append($"\t\t\t{param.VarName}=\"{param.SetVal}\"{nl}");
+                sb.Append($"\t\t\tshift ");
                 if (param.AcceptsValue)
                 {
                     sb.Append($"2{nl}");
@@ -231,9 +232,9 @@ namespace starterBash
                 {
                     sb.Append($"1{nl}");
                 }
-                sb.Append($"\t;;{nl}");
+                sb.Append($"\t\t;;{nl}");
             }
-            sb.Append($"\t--){nl}\t\tshift{nl}\t\tbreak{nl}\t;;{nl}\t\t*){nl}\t\techo \"Invalid option $1 $2\"{nl}\t\texit 3{nl}\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}");
+            sb.Append($"\t\t--){nl}\t\t\tshift{nl}\t\t\tbreak{nl}\t\t;;{nl}\t\t*){nl}\t\t\techo \"Invalid option $1 $2\"{nl}\t\t\texit 3{nl}\t\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}");
             string shortString = "";
             foreach (var param in Parameters)
             {
@@ -250,10 +251,13 @@ namespace starterBash
 
 
             sb.Append($"; then{nl}");
+            sb.Append($"\techo \"\"{nl}");
+            sb.Append($"\techo \"Required parameter missing! \"{nl}");
+            sb.Append($"\techo \"\"{nl}");
             sb.Append($"\tusage{nl}");
             sb.Append($"\texit 2{nl}");
             sb.Append($"fi{nl}{nl}");
-
+            
             sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}");
             
 
