@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
@@ -17,16 +18,13 @@ namespace starterBash
     public class MainPageModel
     {
         public string ScriptName { get; set; } = null;
-        public List<CommandLineInfo> Parameters { get; set; } = new List<CommandLineInfo>();
-        public MainPageModel(string name, ObservableCollection<CommandLineInfoControl> list)
+        public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
+        public MainPageModel(string name, ObservableCollection<ParameterItem> list)
         {
             ScriptName = name;
             if (list != null)
             {
-                foreach (var c in list)
-                {
-                    Parameters.Add(c.ParameterInfo);
-                }
+                Parameters.AddRange(list); 
             }
         }
     }
@@ -35,12 +33,12 @@ namespace starterBash
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
     public sealed partial class MainPage : Page
     {
-        [JsonProperty]
-        public ObservableCollection<CommandLineInfoControl> ControlList { get; set; } = new ObservableCollection<CommandLineInfoControl>();
-        private CommandLineInfoControl _selectedItem = null;
+
+
+        public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
+        private ParameterItem _selectedItem = null;
 
         public MainPage()
         {
@@ -50,13 +48,15 @@ namespace starterBash
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+
+
         public string Json
         {
             get => (string)GetValue(JsonProperty);
             set => SetValue(JsonProperty, value);
         }
 
-        [JsonProperty]
+        
         public string ScriptName
         {
             get => (string)GetValue(ScriptNameProperty);
@@ -73,158 +73,164 @@ namespace starterBash
 
         private void OnAddParameter(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            CommandLineInfoControl ctrl = new CommandLineInfoControl();
-            ControlList.Add(ctrl);
-            ctrl.PropertyChanged += ParameterPropertyChanged;
+            ParameterItem param = new ParameterItem();
+            Parameters.Add(param);
+            param.PropertyChanged += ParameterPropertyChanged;
 
 
         }
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            BashScript = GenerateBash();
-            Json = Serialize();
+            UpdateTextInfo();
         }
 
         private void OnDeleteParameter(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             if (_selectedItem != null)
             {
-                ControlList.Remove(_selectedItem);
+                Parameters.Remove(_selectedItem);
                 _selectedItem = null;
+                UpdateTextInfo();
             }
+        }
+
+        private void UpdateTextInfo()
+        {
+            BashScript = GenerateBash();
+            Json = Serialize();
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count > 0 && e.AddedItems[0].GetType() == typeof(CommandLineInfoControl))
+            if (e.AddedItems.Count > 0 && e.AddedItems[0].GetType() == typeof(ParameterItem))
             {
-                _selectedItem = e.AddedItems[0] as CommandLineInfoControl;
+                _selectedItem = e.AddedItems[0] as ParameterItem;
             }
         }
 
         private string GenerateBash()
         {
-            string s = "";
+            StringBuilder sb = new StringBuilder(4096);
             string nl = "\n";
-            s += "#!/bin/bash" + nl + nl;
-            s += "usage() {" + nl;
-            s += "\techo \"Usage: $0 ";
-            foreach (var param in ControlList)
+            sb.Append($"#!/bin/bash{nl}{nl}");
+            sb.Append($"usage() {{{nl}");
+            sb.Append($"\techo \"Usage: $0 ");
+            foreach (var param in Parameters)
             {
-                s += $" -{param.ParameterInfo.ShortParam}|--{param.ParameterInfo.LongParam}";
+                sb.Append($" -{param.ShortParam}|--{param.LongParam}");
             }
 
-            s += $"\" 1>&2 {nl} ";
-            foreach (var param in ControlList)
+            sb.Append($"\" 1>&2 {nl} ");
+            foreach (var param in Parameters)
             {
-                s += $"\techo \" -{param.ParameterInfo.ShortParam} | --{param.ParameterInfo.LongParam,-30} {param.ParameterInfo.Description}\"{nl}";
+                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-30} {param.Description}\"{nl}");
             }
 
-            s += $"\texit 1{nl}";
-            s += $"}}{nl}{nl}";
-            s += $"# input variables {nl}";
-            foreach (var param in ControlList)
+            sb.Append($"\texit 1{nl}");
+            sb.Append($"}}{nl}{nl}");
+            sb.Append($"# input variables {nl}");
+            foreach (var param in Parameters)
             {
-                s += $"declare {param.ParameterInfo.VarName}={param.ParameterInfo.Default}{nl}";
+                sb.Append($"declare {param.VarName}={param.Default}{nl}");
             }
-            s += nl;
-            s += $"# make sure this version of *nix supports the right getopt {nl}";
-            s += $"! getopt --test > /dev/null{nl}";
-            s += $"if [[ ${{ PIPESTATUS[0]}} -ne 4 ]]; then{nl}";
-            s += $"\techo \"I’m sorry, 'getopt --test' failed in this environment.\"{nl}";
-            s += $"\texit 1{nl}";
-            s += $"fi{nl}{nl}";
+            sb.Append($"{nl}");
+            sb.Append($"# make sure this version of *nix supports the right getopt {nl}");
+            sb.Append($"! getopt --test > /dev/null{nl}");
+            sb.Append($"if [[ ${{ PIPESTATUS[0]}} -ne 4 ]]; then{nl}");
+            sb.Append($"\techo \"I’m sorry, 'getopt --test' failed in this environment.\"{nl}");
+            sb.Append($"\texit 1{nl}");
+            sb.Append($"fi{nl}{nl}");
 
 
-            s += "OPTIONS=";
-            foreach (var param in ControlList)
+            sb.Append("OPTIONS=");
+            foreach (var param in Parameters)
             {
-                s += $"{param.ParameterInfo.ShortParam}";
-                if (param.ParameterInfo.AcceptsValue)
+                sb.Append($"{param.ShortParam}");
+                if (param.AcceptsValue)
                 {
-                    s += ":";
+                    sb.Append(":");
                 }
             }
 
-            s += nl;
+            sb.Append($"{nl}");
 
 
-            s += "LONGOPTS=";
-            foreach (var param in ControlList)
+            sb.Append("LONGOPTS=");
+            foreach (var param in Parameters)
             {
-                s += $"{param.ParameterInfo.LongParam}";
-                if (param.ParameterInfo.AcceptsValue)
+                sb.Append($"{param.LongParam}");
+                if (param.AcceptsValue)
                 {
-                    s += ":";
+                    sb.Append(":");
                 }
-                s += ",";
+                sb.Append(",");
             }
 
-            s += nl;
+            sb.Append($"{nl}");
 
-            s += $"# -use ! and PIPESTATUS to get exit code with errexit set{nl}";
-            s += $"# -temporarily store output to be able to check for errors{nl}";
-            s += $"# -activate quoting/enhanced mode (e.g. by writing out “--options”){nl}";
-            s += $"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}";
-            s += $"!PARSED =$(getopt--options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}";
-            s += $"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}";
-            s += $"\t# e.g. return value is 1{nl}";
-            s += $"\t# then getopt has complained about wrong arguments to stdout{nl}";
-            s += $"\techo \"you might be running bash on a Mac.  if so, run 'brew install gnu-getopt' to make the command line processing work.\"{nl}";
-            s += $"\tusage{nl}";
-            s += $"\texit 2{nl}";
-            s += $"fi{nl}{nl}";
+            sb.Append($"# -use ! and PIPESTATUS to get exit code with errexit set{nl}");
+            sb.Append($"# -temporarily store output to be able to check for errors{nl}");
+            sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out “--options”){nl}");
+            sb.Append($"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}");
+            sb.Append($"!PARSED =$(getopt--options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
+            sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}");
+            sb.Append($"\t# e.g. return value is 1{nl}");
+            sb.Append($"\t# then getopt has complained about wrong arguments to stdout{nl}");
+            sb.Append($"\techo \"you might be running bash on a Mac.  if so, run 'brew install gnu-getopt' to make the command line processing work.\"{nl}");
+            sb.Append($"\tusage{nl}");
+            sb.Append($"\texit 2{nl}");
+            sb.Append($"fi{nl}{nl}");
 
 
-            s += $"# read getopt’s output this way to handle the quoting right:{nl}";
-            s += $"eval set -- \"$PARSED\"{nl}";
-            s += $"# now enjoy the options in order and nicely split until we see --{nl}";
+            sb.Append($"# read getopt’s output this way to handle the quoting right:{nl}");
+            sb.Append($"eval set -- \"$PARSED\"{nl}");
+            sb.Append($"# now enjoy the options in order and nicely split until we see --{nl}");
 
-            s += $"while true; do{nl}";
-            s += $"\tcase \"$1\" in{nl}";
-            foreach (var param in ControlList)
+            sb.Append($"while true; do{nl}");
+            sb.Append($"\tcase \"$1\" in{nl}");
+            foreach (var param in Parameters)
             {
 
-                s += $"\t\t-{param.ParameterInfo.ShortParam}|--{param.ParameterInfo.LongParam}){nl}";
-                s += $"\t\t{param.ParameterInfo.VarName}=\"{param.ParameterInfo.SetVal}\"{nl}";
-                s += $"\t\tshift ";
-                if (param.ParameterInfo.AcceptsValue)
+                sb.Append($"\t\t-{param.ShortParam}|--{param.LongParam}){nl}");
+                sb.Append($"\t\t{param.VarName}=\"{param.SetVal}\"{nl}");
+                sb.Append($"\t\tshift ");
+                if (param.AcceptsValue)
                 {
-                    s += $"2{nl}";
+                    sb.Append($"2{nl}");
                 }
                 else
                 {
-                    s += $"1{nl}";
+                    sb.Append($"1{nl}");
                 }
-                s += $"\t;;{nl}";
+                sb.Append($"\t;;{nl}");
             }
-            s += $"\t--){nl}\t\tshift{nl}\t\tbreak{nl}\t;;{nl}\t\t*){nl}\t\techo \"Invalid option $1 $2\"{nl}\t\texit 3{nl}\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}";
+            sb.Append($"\t--){nl}\t\tshift{nl}\t\tbreak{nl}\t;;{nl}\t\t*){nl}\t\techo \"Invalid option $1 $2\"{nl}\t\texit 3{nl}\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}");
             string shortString = "";
-            foreach (var param in ControlList)
+            foreach (var param in Parameters)
             {
-                if (param.ParameterInfo.Required)
+                if (param.Required)
                 {
-                    shortString += $"[-z \"${{{param.ParameterInfo.VarName}}}\" ] || ";
+                    shortString += $"[-z \"${{{param.VarName}}}\" ] || ";
                 }
             }
             if (shortString.Length > 3)
             {
                 shortString = shortString.Substring(0, shortString.Length - " || ".Length);
-                s += $"{shortString}";
+                sb.Append($"{shortString}");
             }
 
 
-            s += $"]; then{nl}";
-            s += $"\tusage{nl}";
-            s += $"\texit 2{nl}";
-            s += $"fi{nl}{nl}";
+            sb.Append($"; then{nl}");
+            sb.Append($"\tusage{nl}");
+            sb.Append($"\texit 2{nl}");
+            sb.Append($"fi{nl}{nl}");
 
-            s += $"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}";
+            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");
 
-            s += $"# start writing you script!{nl}{nl}";
+            sb.Append($"# start writing you script!{nl}{nl}");
 
-            return s;
+            return sb.ToString();
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -236,8 +242,8 @@ namespace starterBash
 
         private void OnTest(object sender, RoutedEventArgs e)
         {
-            CommandLineInfoControl ctrl = new CommandLineInfoControl();
-            CommandLineInfo info = new CommandLineInfo
+
+            ParameterItem param = new ParameterItem
             {
                 ShortParam = "r",
                 Description = "Azure Resource Group",
@@ -249,13 +255,13 @@ namespace starterBash
 
             };
 
-            ctrl.ParameterInfo = info;
-            ctrl.PropertyChanged += ParameterPropertyChanged;
-            ControlList.Add(ctrl);
-            
 
-            ctrl = new CommandLineInfoControl();
-            info = new CommandLineInfo
+            param.PropertyChanged += ParameterPropertyChanged;
+            Parameters.Add(param);
+
+
+
+            param = new ParameterItem
             {
                 ShortParam = "l",
                 Description = "the location of the VMs",
@@ -267,12 +273,11 @@ namespace starterBash
 
             };
 
-            ctrl.ParameterInfo = info;
-            ctrl.PropertyChanged += ParameterPropertyChanged;
-            ControlList.Add(ctrl);
+            param.PropertyChanged += ParameterPropertyChanged;
+            Parameters.Add(param);
 
-            ctrl = new CommandLineInfoControl();
-            info = new CommandLineInfo
+
+            param = new ParameterItem
             {
                 ShortParam = "d",
                 Description = "delete the resource group if it already exists",
@@ -284,38 +289,22 @@ namespace starterBash
                 SetVal = "true"
             };
 
-            ctrl.ParameterInfo = info;
-            ctrl.PropertyChanged += ParameterPropertyChanged;
-            ControlList.Add(ctrl);
+            param.PropertyChanged += ParameterPropertyChanged;
+            Parameters.Add(param);
 
             ScriptName = "./createResourceGroup.sh";
-            Json = Serialize();
-            BashScript = GenerateBash();
+            UpdateTextInfo();
         }
 
         private string Serialize()
         {
-            MainPageModel model = new MainPageModel(ScriptName, ControlList);
+            MainPageModel model = new MainPageModel(ScriptName, Parameters);
             return JsonConvert.SerializeObject(model, Formatting.Indented);
         }
 
         private void Deserialize()
         {
 
-        }
-
-        private void OnSerialize(object sender, RoutedEventArgs e)
-        {
-            //MainPageModel model = new MainPageModel(ScriptName, ControlList);
-            //Json = JsonConvert.SerializeObject(model, Formatting.Indented);
-
-            //var result = JsonConvert.DeserializeObject<MainPageModel>(BashScript);
-            //foreach (var c in result.ControlList)
-            //{
-            //    this.ControlList.Add(c);
-            //}
-
-            //ScriptName = result.ScriptName;
         }
 
         private async void OnSave(object sender, RoutedEventArgs e)
@@ -351,22 +340,24 @@ namespace starterBash
             {
                 this.Json = await FileIO.ReadTextAsync(file);
 
-                ControlList.Clear();
+                Parameters.Clear();
                 var result = JsonConvert.DeserializeObject<MainPageModel>(this.Json);
                 if (result != null)
                 {
-                    foreach (var c in result.Parameters)
+                    foreach (var param in result.Parameters)
                     {
-                        var ctrl = new CommandLineInfoControl()
-                        {
-                            ParameterInfo = c
-                        };
 
-                        ControlList.Add(ctrl);
+                        Parameters.Add(param);
+                        param.PropertyChanged += ParameterPropertyChanged;
                     }
-                    ScriptName = result.ScriptName;
+
+                   
                 }
+
+                UpdateTextInfo();
             }
+
+            
 
         }
 
@@ -375,19 +366,6 @@ namespace starterBash
             TextBox tb = sender as TextBox;
             tb.SelectAll();
         }
-
-
-        //var result = JsonConvert.DeserializeObject<JArray> (BashScript);
-        //foreach (var item in result)
-        //{
-        //    CommandLineInfo info = JsonConvert.DeserializeObject<CommandLineInfo>(item.ToString());
-        //    CommandLineInfoControl ctrl = new CommandLineInfoControl
-        //    {
-        //        ParameterInfo = info
-        //    };
-        //    ControlList.Add(ctrl);
-        //}
-
 
     }
 }

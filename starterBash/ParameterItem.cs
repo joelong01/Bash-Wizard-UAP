@@ -4,32 +4,15 @@ using System.Runtime.CompilerServices;
 
 namespace starterBash
 {
-    public class CommandLineInfo : INotifyPropertyChanged
+    public class ParameterItem : INotifyPropertyChanged
     {
-        private readonly string[] SaveNames = { "ShortParam", "LongParam", "Description", "VarName", "AcceptsValue", "Default" };
-
-        public string Serialize()
-        {
-            return StaticHelpers.SerializeObject<CommandLineInfo>(this, SaveNames, "=", "|");
-        }
-
-        public void Deserialize(string s)
-        {
-            this.DeserializeObject<CommandLineInfo>(s, "=", "|");
-        }
-
+        
         public override string ToString()
         {
-            return Serialize();
+            return $"{LongParam}: {Description}";
         }
 
-        public CommandLineInfo(string s)
-        {
-            Deserialize(s);
-        }
-
-        public CommandLineInfo() { }
-
+        
 
         private string _ShortParam = "";
         public string ShortParam
