@@ -24,7 +24,7 @@ namespace starterBash
             ScriptName = name;
             if (list != null)
             {
-                Parameters.AddRange(list); 
+                Parameters.AddRange(list);
             }
         }
     }
@@ -56,7 +56,7 @@ namespace starterBash
             set => SetValue(JsonProperty, value);
         }
 
-        
+
         public string ScriptName
         {
             get => (string)GetValue(ScriptNameProperty);
@@ -137,7 +137,7 @@ namespace starterBash
             sb.Append($"{nl}");
             sb.Append($"# make sure this version of *nix supports the right getopt {nl}");
             sb.Append($"! getopt --test > /dev/null{nl}");
-            sb.Append($"if [[ ${{ PIPESTATUS[0]}} -ne 4 ]]; then{nl}");
+            sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 4 ]]; then{nl}");
             sb.Append($"\techo \"I’m sorry, 'getopt --test' failed in this environment.\"{nl}");
             sb.Append($"\texit 1{nl}");
             sb.Append($"fi{nl}{nl}");
@@ -173,7 +173,7 @@ namespace starterBash
             sb.Append($"# -temporarily store output to be able to check for errors{nl}");
             sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out “--options”){nl}");
             sb.Append($"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}");
-            sb.Append($"!PARSED =$(getopt--options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
+            sb.Append($"! PARSED=$(getopt--options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
             sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}");
             sb.Append($"\t# e.g. return value is 1{nl}");
             sb.Append($"\t# then getopt has complained about wrong arguments to stdout{nl}");
@@ -211,7 +211,7 @@ namespace starterBash
             {
                 if (param.Required)
                 {
-                    shortString += $"[-z \"${{{param.VarName}}}\" ] || ";
+                    shortString += $"[ -z \"${{{param.VarName}}}\" ] || ";
                 }
             }
             if (shortString.Length > 3)
@@ -351,13 +351,13 @@ namespace starterBash
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
 
-                   
+
                 }
 
                 UpdateTextInfo();
             }
 
-            
+
 
         }
 
