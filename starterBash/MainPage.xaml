@@ -25,6 +25,7 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="TextAlignment" Value="Left" />
+            <Setter Property="IsSpellCheckEnabled"  Value="False" />
         </Style>
         <DataTemplate x:Key="ParameterItem" x:DataType="local:ParameterItem">
             <Grid Background="Gray" HorizontalAlignment="Stretch">

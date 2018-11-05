@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -108,9 +109,36 @@ namespace starterBash
                 _selectedItem = e.AddedItems[0] as ParameterItem;
             }
         }
+        /// <summary>
+        ///     put all data validation here
+        /// </summary>
+        private string ValidateParameters()
+        {
+            //verify short names are unique
+            HashSet<string>  shortNames = new HashSet<string>();
+            HashSet<string> longNames = new HashSet<string>();
+            foreach (var param in Parameters)
+            {
+                if (!shortNames.Add(param.ShortParam))
+                {
+                    return $"{param.ShortParam} exists at least twice.  please fix it.";
+                }
+                if (!longNames.Add(param.LongParam))
+                {
+                    return $"{param.LongParam} exists at least twice.  please fix it.";
+                }
+            }
 
+            return "";
+
+        }
         private string GenerateBash()
         {
+            string validateString = ValidateParameters();
+            if (validateString != "")
+            {
+                return validateString;
+            }
             StringBuilder sb = new StringBuilder(4096);
             string nl = "\n";
             sb.Append($"#!/bin/bash{nl}{nl}");
@@ -226,9 +254,8 @@ namespace starterBash
             sb.Append($"\texit 2{nl}");
             sb.Append($"fi{nl}{nl}");
 
-            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");
-
-            sb.Append($"# start writing you script!{nl}{nl}");
+            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}");
+            
 
             return sb.ToString();
         }
@@ -236,8 +263,7 @@ namespace starterBash
         private void OnUpdate(object sender, RoutedEventArgs e)
         {
 
-
-            BashScript = GenerateBash();
+            UpdateTextInfo();
         }
 
         private void OnTest(object sender, RoutedEventArgs e)
