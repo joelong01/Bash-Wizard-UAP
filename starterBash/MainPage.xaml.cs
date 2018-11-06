@@ -406,5 +406,16 @@ namespace starterBash
             tb.SelectAll();
         }
 
+        private void HamburgerButton_Click(object sender, RoutedEventArgs e)
+        {
+            splitView.IsPaneOpen = !splitView.IsPaneOpen;
+        }
+
+        private void OnAddParameter(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            ParameterItem param = new ParameterItem();
+            Parameters.Add(param);
+            param.PropertyChanged += ParameterPropertyChanged;
+        }
     }
 }
