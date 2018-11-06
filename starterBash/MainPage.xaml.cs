@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
@@ -18,6 +19,7 @@ namespace starterBash
 
     public class MainPageModel
     {
+        
         public string ScriptName { get; set; } = null;
         public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
         public MainPageModel(string name, ObservableCollection<ParameterItem> list)
@@ -40,6 +42,7 @@ namespace starterBash
 
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
         private ParameterItem _selectedItem = null;
+        private StorageFile _file = null;
 
         public MainPage()
         {
@@ -341,28 +344,8 @@ namespace starterBash
             return JsonConvert.SerializeObject(model, Formatting.Indented);
         }
 
-        private void Deserialize()
-        {
 
-        }
-
-        private async void OnSave(object sender, RoutedEventArgs e)
-        {
-            var savePicker = new FileSavePicker
-            {
-                SuggestedStartLocation =
-                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
-            };
-            savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
-            savePicker.SuggestedFileName = $"{ScriptName}.param";
-            Windows.Storage.StorageFile file = await savePicker.PickSaveFileAsync();
-            string toSave = Serialize();
-            if (file != null)
-            {
-                await FileIO.WriteTextAsync(file, toSave);
-
-            }
-        }
+   
 
         private async void OnOpen(object sender, RoutedEventArgs e)
         {
@@ -374,10 +357,10 @@ namespace starterBash
             };
 
             picker.FileTypeFilter.Add(".param");
-            StorageFile file = await picker.PickSingleFileAsync();
-            if (file != null)
+            _file = await picker.PickSingleFileAsync();
+            if (_file != null)
             {
-                this.Json = await FileIO.ReadTextAsync(file);
+                this.Json = await FileIO.ReadTextAsync(_file);
 
                 Parameters.Clear();
                 var result = JsonConvert.DeserializeObject<MainPageModel>(this.Json);
@@ -393,6 +376,8 @@ namespace starterBash
 
                 }
 
+                this.ScriptName = result.ScriptName;
+
                 UpdateTextInfo();
             }
 
@@ -406,5 +391,66 @@ namespace starterBash
             tb.SelectAll();
         }
 
+        private void HamburgerButton_Click(object sender, RoutedEventArgs e)
+        {
+            splitView.IsPaneOpen = !splitView.IsPaneOpen;
+        }
+
+        private void OnAddParameter(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            ParameterItem param = new ParameterItem();
+            Parameters.Add(param);
+            param.PropertyChanged += ParameterPropertyChanged;
+        }
+
+        private void OnNew(object sender, RoutedEventArgs e)
+        {
+            BashScript = "";
+            Json = "";
+            Parameters.Clear();
+            ScriptName = "";
+            _file = null;
+        }
+
+        private async void OnSaveAs(object sender, RoutedEventArgs e)
+        {
+            var savePicker = new FileSavePicker
+            {
+                SuggestedStartLocation =
+                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
+            };
+            savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
+            savePicker.SuggestedFileName = $"{ScriptName}.param";
+            _file = await savePicker.PickSaveFileAsync();
+            await Save();
+            
+        }
+
+        private async void OnSave(object sender, RoutedEventArgs e)
+        {
+            if (_file == null)
+            {
+                OnSaveAs(sender, e);
+            }
+            else
+            {
+                await Save();
+            }
+        }
+
+        private async Task Save()
+        {
+            string toSave = Serialize();
+            if (_file != null)
+            {
+                await FileIO.WriteTextAsync(_file, toSave);
+            }
+            UpdateTextInfo();
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            UpdateTextInfo();
+        }
     }
 }
