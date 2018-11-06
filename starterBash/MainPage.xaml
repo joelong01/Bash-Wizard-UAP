@@ -214,8 +214,8 @@
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <TextBox Text="{x:Bind BashScript, Mode=OneWay}" FontFamily="Consolas" FontSize="12"  AcceptsReturn="True" Grid.Column="0" GotFocus="Text_GotFocus" />
-                <TextBox Text="{x:Bind Json, Mode=OneWay}" FontFamily="Consolas" FontSize="12"  AcceptsReturn="True" Grid.Column="1"  GotFocus="Text_GotFocus" />
+                <TextBox Text="{x:Bind BashScript, Mode=OneWay}" Style="{StaticResource KvpTextBox}" VerticalAlignment="Stretch"  AcceptsReturn="True" Grid.Column="0" GotFocus="Text_GotFocus" IsReadOnly="True" IsSpellCheckEnabled="False"/>
+                <TextBox Text="{x:Bind Json, Mode=OneWay}" Style="{StaticResource KvpTextBox}" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="1"  LostFocus="Json_LostFocus" IsSpellCheckEnabled="False" />
             </Grid>
         </Grid>
     </SplitView>

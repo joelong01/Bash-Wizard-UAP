@@ -3,13 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -19,7 +19,7 @@ namespace starterBash
 
     public class MainPageModel
     {
-        
+
         public string ScriptName { get; set; } = null;
         public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
         public MainPageModel(string name, ObservableCollection<ParameterItem> list)
@@ -86,7 +86,7 @@ namespace starterBash
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            UpdateTextInfo();
+            UpdateTextInfo(true);
         }
 
         private void OnDeleteParameter(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -95,14 +95,17 @@ namespace starterBash
             {
                 Parameters.Remove(_selectedItem);
                 _selectedItem = null;
-                UpdateTextInfo();
+                UpdateTextInfo(true);
             }
         }
 
-        private void UpdateTextInfo()
+        private void UpdateTextInfo(bool setJsonText)
         {
             BashScript = GenerateBash();
-            Json = Serialize();
+            if (setJsonText)
+            {
+                Json = Serialize();
+            }
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -118,7 +121,7 @@ namespace starterBash
         private string ValidateParameters()
         {
             //verify short names are unique
-            HashSet<string>  shortNames = new HashSet<string>();
+            HashSet<string> shortNames = new HashSet<string>();
             HashSet<string> longNames = new HashSet<string>();
             foreach (var param in Parameters)
             {
@@ -269,9 +272,9 @@ namespace starterBash
             sb.Append($"\tusage{nl}");
             sb.Append($"\texit 2{nl}");
             sb.Append($"fi{nl}{nl}");
-            
+
             sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}");
-            
+
 
             return sb.ToString();
         }
@@ -279,7 +282,7 @@ namespace starterBash
         private void OnUpdate(object sender, RoutedEventArgs e)
         {
 
-            UpdateTextInfo();
+            UpdateTextInfo(true);
         }
 
         private void OnTest(object sender, RoutedEventArgs e)
@@ -335,7 +338,7 @@ namespace starterBash
             Parameters.Add(param);
 
             ScriptName = "./createResourceGroup.sh";
-            UpdateTextInfo();
+            UpdateTextInfo(true);
         }
 
         private string Serialize()
@@ -345,7 +348,7 @@ namespace starterBash
         }
 
 
-   
+
 
         private async void OnOpen(object sender, RoutedEventArgs e)
         {
@@ -360,12 +363,29 @@ namespace starterBash
             _file = await picker.PickSingleFileAsync();
             if (_file != null)
             {
-                this.Json = await FileIO.ReadTextAsync(_file);
+                string s = await FileIO.ReadTextAsync(_file);
 
-                Parameters.Clear();
-                var result = JsonConvert.DeserializeObject<MainPageModel>(this.Json);
+                Deserialize(s, true);
+            }
+
+
+
+        }
+
+        private void Deserialize(string s, bool setJsonText)
+        {
+            if (setJsonText)
+            {
+                this.Json = s;
+            }
+
+            try
+            {
+                var result = JsonConvert.DeserializeObject<MainPageModel>(s);
                 if (result != null)
                 {
+                    Parameters.Clear();
+
                     foreach (var param in result.Parameters)
                     {
 
@@ -373,14 +393,14 @@ namespace starterBash
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
 
-
+                    this.ScriptName = result.ScriptName;
+                    UpdateTextInfo(setJsonText);
                 }
-
-                this.ScriptName = result.ScriptName;
-
-                UpdateTextInfo();
             }
-
+            catch (Exception)
+            {
+                BashScript = $"Exception thrown parsing JSON file.";
+            }
 
 
         }
@@ -423,7 +443,7 @@ namespace starterBash
             savePicker.SuggestedFileName = $"{ScriptName}.param";
             _file = await savePicker.PickSaveFileAsync();
             await Save();
-            
+
         }
 
         private async void OnSave(object sender, RoutedEventArgs e)
@@ -445,12 +465,19 @@ namespace starterBash
             {
                 await FileIO.WriteTextAsync(_file, toSave);
             }
-            UpdateTextInfo();
+            UpdateTextInfo(true);
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            UpdateTextInfo();
+            UpdateTextInfo(true);
+        }
+
+        private void Json_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var txtBox = sender as TextBox;
+
+            this.Deserialize(txtBox.Text, false);
         }
     }
 }
