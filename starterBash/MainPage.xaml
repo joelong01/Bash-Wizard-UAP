@@ -44,7 +44,7 @@
                         <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Short Name:" Style="{StaticResource KvpTextBlock}" Grid.Row="0" Grid.Column="0" />
-                    <TextBox Text="{x:Bind ShortParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" Grid.Row="0" Grid.Column="1" />
+                    <TextBox x:Name="TextBox_ShortParameter" Text="{x:Bind ShortParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" Grid.Row="0" Grid.Column="1" />
                 </Grid>
                 <Grid  Grid.Row="0" Grid.Column="1">
                     <Grid.ColumnDefinitions>
@@ -122,8 +122,10 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Bash Script Starter" x:Name="PaneHeader" Margin="60,12,0,0" Style="{StaticResource BaseTextBlockStyle}"/>
-                <Button Background="Transparent" HorizontalAlignment="Left" Grid.Row="1" Click="HamburgerButton_Click">
+                
+            
+                <!--this is the hamburger button-->
+                <Button Background="Transparent" HorizontalAlignment="Left" Grid.Row="0" Click="HamburgerButton_Click">
                     <Button.Content>
                         <StackPanel Orientation="Horizontal" >
                             <SymbolIcon Symbol="GlobalNavigationButton" />
@@ -131,9 +133,9 @@
                     </Button.Content>
                 </Button>
 
-                <!--<Button x:Name="HamburgerButton" Grid.Row="1" FontFamily="Segoe MDL2 Assets" Content="&#xE700;" Width="50" Height="50" Background="Transparent" Click="HamburgerButton_Click"/>-->
-                
-                <StackPanel Orientation="Vertical" Grid.Row="2">
+
+                <!--New Script -->
+                <StackPanel Orientation="Vertical" Grid.Row="2" Margin="0,25,0,0">
                     <Button Background="Transparent" HorizontalAlignment="Left" Click="OnNew" >
                         <Button.Content>
                             <StackPanel Orientation="Horizontal" >
@@ -142,8 +144,17 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                   
-                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnSaveAs">
+                    <!-- Open -->
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnOpen" Margin="0,50,0,0" >
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal" Grid.Row="2" >
+                                <SymbolIcon Symbol="OpenFile" />
+                                <TextBlock Text="Open..." Margin="24,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    <!--Save As -->
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnSaveAs" >
                         <Button.Content>
                             <StackPanel Orientation="Horizontal" Grid.Row="2" >
                                 <SymbolIcon Symbol="Save" />
@@ -151,6 +162,7 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
+                    <!-- Save -->
                     <Button Background="Transparent" HorizontalAlignment="Left" Click="OnSave">
                         <Button.Content>
                             <StackPanel Orientation="Horizontal"  >
@@ -159,14 +171,17 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnOpen" >
+                    
+                    <!-- Add Parameter -->
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnAddParameter" Margin="0,50,0,0">
                         <Button.Content>
-                            <StackPanel Orientation="Horizontal" Grid.Row="2" >
-                                <SymbolIcon Symbol="OpenFile" />
-                                <TextBlock Text="Open..." Margin="24,0,0,0" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal">
+                                <SymbolIcon Symbol="Add" />
+                                <TextBlock Text="Add Parameter" Margin="24,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>
+                    <!--Delete Parameter -->
                     <Button Background="Transparent" HorizontalAlignment="Left" Click="OnDeleteParameter" >
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
@@ -175,14 +190,7 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnAddParameter">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <SymbolIcon Symbol="Add" />
-                                <TextBlock Text="Add Parameter" Margin="24,0,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
+                   
                 </StackPanel>
                 
             </Grid>
@@ -201,7 +209,7 @@
                 <TextBox FontSize="20" Margin="10,0,0,0" Width="450" VerticalAlignment="Center" Text="{x:Bind ScriptName, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" />
                
             </StackPanel>
-            <ListBox Grid.Row="1" ItemsSource="{x:Bind Parameters }" ItemTemplate="{StaticResource ParameterItem}" SelectionChanged="OnSelectionChanged" HorizontalContentAlignment="Stretch">
+            <ListBox Name="ListBox_Parameters" Grid.Row="1" ItemsSource="{x:Bind Parameters }" ItemTemplate="{StaticResource ParameterItem}" SelectionChanged="OnSelectionChanged" HorizontalContentAlignment="Stretch">
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -215,7 +223,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <TextBox Text="{x:Bind BashScript, Mode=OneWay}" Style="{StaticResource KvpTextBox}" VerticalAlignment="Stretch"  AcceptsReturn="True" Grid.Column="0" GotFocus="Text_GotFocus" IsReadOnly="True" IsSpellCheckEnabled="False"/>
-                <TextBox Text="{x:Bind Json, Mode=OneWay}" Style="{StaticResource KvpTextBox}" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="1"  LostFocus="Json_LostFocus" IsSpellCheckEnabled="False" />
+                <TextBox Text="{x:Bind Json, Mode=OneWay}" Style="{StaticResource KvpTextBox}" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="1"  LostFocus="Json_LostFocus" IsSpellCheckEnabled="False" KeyUp="Json_KeyUp" />
             </Grid>
         </Grid>
     </SplitView>
