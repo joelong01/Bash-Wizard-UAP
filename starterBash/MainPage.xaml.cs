@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.System;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -80,8 +82,11 @@ namespace starterBash
             ParameterItem param = new ParameterItem();
             Parameters.Add(param);
             param.PropertyChanged += ParameterPropertyChanged;
-
-
+            ListBox_Parameters.ScrollIntoView(param);
+            ListBox_Parameters.SelectedItem = param;
+           
+            splitView.IsPaneOpen = false;
+            
         }
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -96,8 +101,19 @@ namespace starterBash
                 Parameters.Remove(_selectedItem);
                 _selectedItem = null;
                 UpdateTextInfo(true);
+                if (Parameters.Count > 0)
+                {
+                    var param = Parameters[Parameters.Count - 1];
+                    ListBox_Parameters.ScrollIntoView(param);
+                    ListBox_Parameters.SelectedItem = param;
+                    
+                }
             }
+
+            splitView.IsPaneOpen = false;
         }
+
+
 
         private void UpdateTextInfo(bool setJsonText)
         {
@@ -106,6 +122,8 @@ namespace starterBash
             {
                 Json = Serialize();
             }
+
+            splitView.IsPaneOpen = false;
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -456,6 +474,7 @@ namespace starterBash
             {
                 await Save();
             }
+           
         }
 
         private async Task Save()
@@ -478,6 +497,27 @@ namespace starterBash
             var txtBox = sender as TextBox;
 
             this.Deserialize(txtBox.Text, false);
+        }
+        private static bool IsCtrlKeyPressed()
+        {
+            var ctrlState = CoreWindow.GetForCurrentThread().GetKeyState(VirtualKey.Control);
+            return (ctrlState & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+        }
+
+        /// <summary>
+        ///     CTRL+P will Parse the JSON field and if sucessful update the rest of the UI
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Json_KeyUp(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.P && IsCtrlKeyPressed())
+            {
+                var txtBox = sender as TextBox;
+
+                this.Deserialize(txtBox.Text, false);
+
+            }
         }
     }
 }
