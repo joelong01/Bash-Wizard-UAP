@@ -23,14 +23,19 @@ namespace starterBash
     {
 
         public string ScriptName { get; set; } = null;
+        public bool EchoInput { get; set; } = true;
+        public bool CreateLogLines { get; set; } = true;
         public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
-        public MainPageModel(string name, ObservableCollection<ParameterItem> list)
+
+        public MainPageModel(string name, ObservableCollection<ParameterItem> list, bool echoInput, bool createLogLines)
         {
             ScriptName = name;
             if (list != null)
             {
                 Parameters.AddRange(list);
             }
+            EchoInput = echoInput;
+            CreateLogLines = createLogLines;
         }
     }
 
@@ -54,6 +59,41 @@ namespace starterBash
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
+        public static readonly DependencyProperty CreateLogLinesProperty = DependencyProperty.Register("CreateLogLines", typeof(bool), typeof(MainPage), new PropertyMetadata(true, CreateLogLinesChanged));
+        public bool CreateLogLines
+        {
+            get => (bool)GetValue(CreateLogLinesProperty);
+            set => SetValue(CreateLogLinesProperty, value);
+        }
+        private static void CreateLogLinesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (bool)e.NewValue;
+            depPropClass?.SetCreateLogLines(depPropValue);
+        }
+        private void SetCreateLogLines(bool value)
+        {
+            UpdateTextInfo(true);
+        }
+
+
+        public bool EchoInput
+        {
+            get => (bool)GetValue(EchoInputProperty);
+            set => SetValue(EchoInputProperty, value);
+        }
+        private static void EchoInputChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (bool)e.NewValue;
+            depPropClass?.SetEchoInput(depPropValue);
+        }
+        private void SetEchoInput(bool value)
+        {
+            UpdateTextInfo(true);
+        }
+
 
 
         public string Json
@@ -84,9 +124,9 @@ namespace starterBash
             param.PropertyChanged += ParameterPropertyChanged;
             ListBox_Parameters.ScrollIntoView(param);
             ListBox_Parameters.SelectedItem = param;
-           
+
             splitView.IsPaneOpen = false;
-            
+
         }
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -106,7 +146,7 @@ namespace starterBash
                     var param = Parameters[Parameters.Count - 1];
                     ListBox_Parameters.ScrollIntoView(param);
                     ListBox_Parameters.SelectedItem = param;
-                    
+
                 }
             }
 
@@ -176,6 +216,7 @@ namespace starterBash
             sb.Append($"\" 1>&2 {nl} ");
             sb.Append($"\techo \"\"{nl}");
             string required = "";
+
             foreach (var param in Parameters)
             {
                 if (param.Required)
@@ -186,11 +227,22 @@ namespace starterBash
                 {
                     required = "(Optional)";
                 }
-                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-20} {required,-15} {param.Description}\"{nl}");
+                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-30} {required,-15} {param.Description}\"{nl}");
             }
             sb.Append($"\techo \"\"{nl}");
             sb.Append($"\texit 1{nl}");
             sb.Append($"}}{nl}{nl}");
+
+            // echoInput()
+
+            sb.Append($"echoInput() {{ {nl}\techo \"{ScriptName}:\"{nl}");
+            foreach (var param in Parameters)
+            {
+                sb.Append($"\techo \"\t{param.VarName,-30} ${param.VarName}\"{nl}");
+            }
+            sb.Append($"}}{nl}{nl}");
+
+            // input variables
             sb.Append($"# input variables {nl}");
             foreach (var param in Parameters)
             {
@@ -235,7 +287,8 @@ namespace starterBash
             sb.Append($"# -temporarily store output to be able to check for errors{nl}");
             sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out \"--options\"){nl}");
             sb.Append($"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}");
-            sb.Append($"! PARSED=$(getopt --options =$OPTIONS--longoptions =$LONGOPTS--name \"$0\"-- \"$@\"){nl}");
+            sb.Append("! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name \"$0\" -- \"$@\")");
+            sb.Append($"{nl}");
             sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}");
             sb.Append($"\t# e.g. return value is 1{nl}");
             sb.Append($"\t# then getopt has complained about wrong arguments to stdout{nl}");
@@ -255,7 +308,7 @@ namespace starterBash
             {
 
                 sb.Append($"\t\t-{param.ShortParam}|--{param.LongParam}){nl}");
-                sb.Append($"\t\t\t{param.VarName}=\"{param.SetVal}\"{nl}");
+                sb.Append($"\t\t\t{param.VarName}={param.SetVal}{nl}");
                 sb.Append($"\t\t\tshift ");
                 if (param.AcceptsValue)
                 {
@@ -286,14 +339,38 @@ namespace starterBash
             sb.Append($"; then{nl}");
             sb.Append($"\techo \"\"{nl}");
             sb.Append($"\techo \"Required parameter missing! \"{nl}");
+            sb.Append($"\techoInput #make it easy to see what is missing{nl}");
             sb.Append($"\techo \"\"{nl}");
             sb.Append($"\tusage{nl}");
             sb.Append($"\texit 2{nl}");
             sb.Append($"fi{nl}{nl}");
 
-            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}");
+            if (this.EchoInput == true)
+            {
+                sb.Append($"echoInput{nl}{nl}");
+            }
+
+            /*
+             *declare LOG_FILE="${logFileDir}createResourceGroup.log"
+            mkdir $logFileDir  2>> /dev/null
+            rm -f $LOG_FILE  >> /dev/null
 
 
+            time=$(date +"%m/%d/%y @ %r")
+            echo "started: $time" >> $LOG_FILE 
+             * 
+             * 
+             */
+            if (this.CreateLogLines)
+            {
+                sb.Append($"declare LOG_FILE=\"${{logFileDir}}{this.ScriptName}.log\"{nl}");
+                sb.Append($"mkdir $logFileDir  2>> /dev/null{nl}");
+                sb.Append($"rm -f $LOG_FILE  >> /dev/null{nl}");
+                sb.Append($"time=$(date +\"%m/%d/%y @ %r\"){nl}");
+                sb.Append($"echo \"started: $time\" >> $LOG_FILE{nl}");
+            }
+            sb.Append($"#---------- see https://github.com/joelong01/starterBash ----------------{nl}");
+            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");
             return sb.ToString();
         }
 
@@ -361,7 +438,7 @@ namespace starterBash
 
         private string Serialize()
         {
-            MainPageModel model = new MainPageModel(ScriptName, Parameters);
+            MainPageModel model = new MainPageModel(ScriptName, Parameters, EchoInput, CreateLogLines);
             return JsonConvert.SerializeObject(model, Formatting.Indented);
         }
 
@@ -412,6 +489,7 @@ namespace starterBash
                     }
 
                     this.ScriptName = result.ScriptName;
+                    this.EchoInput = result.EchoInput;
                     UpdateTextInfo(setJsonText);
                 }
             }
@@ -474,7 +552,7 @@ namespace starterBash
             {
                 await Save();
             }
-           
+
         }
 
         private async Task Save()
@@ -519,5 +597,7 @@ namespace starterBash
 
             }
         }
+
+
     }
 }
