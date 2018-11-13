@@ -9,6 +9,7 @@ using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Core;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -164,6 +165,23 @@ namespace starterBash
             }
 
             splitView.IsPaneOpen = false;
+            AsyncSave();
+        }
+
+        private void AsyncSave()
+        {
+            var ignored = CoreWindow.GetForCurrentThread().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+            {
+                try
+                {
+                    string toSave = Serialize();
+                    if (_file != null)
+                    {
+                        await FileIO.WriteTextAsync(_file, toSave);
+                    }
+                }
+                catch { }  // because we are doing this an an asyc way, it is very possible that the file is locked.  we'll just each the exception and it will (eventually) save
+            });
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -364,13 +382,13 @@ namespace starterBash
             if (this.CreateLogLines)
             {
                 sb.Append($"declare LOG_FILE=\"${{logFileDir}}{this.ScriptName}.log\"{nl}");
-                sb.Append($"mkdir $logFileDir  2>> /dev/null{nl}");
-                sb.Append($"rm -f $LOG_FILE  >> /dev/null{nl}");
+                sb.Append($"mkdir \"${{logFileDir}}\" 2>> /dev/null{nl}");
+                sb.Append($"rm -f \"${{LOG_FILE}}\"  >> /dev/null{nl}");
                 sb.Append($"time=$(date +\"%m/%d/%y @ %r\"){nl}");
-                sb.Append($"echo \"started: $time\" >> $LOG_FILE{nl}");
+                sb.Append($"echo \"started: $time\" >> \"${{LOG_FILE}}\"{nl}");
             }
             sb.Append($"#---------- see https://github.com/joelong01/starterBash ----------------{nl}");
-            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");
+            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");            
             return sb.ToString();
         }
 
@@ -519,8 +537,23 @@ namespace starterBash
             param.PropertyChanged += ParameterPropertyChanged;
         }
 
-        private void OnNew(object sender, RoutedEventArgs e)
+        private async void OnNew(object sender, RoutedEventArgs e)
         {
+            if (BashScript != "")
+            {
+                var dialog = new MessageDialog("Create a new bash script?")
+                {
+                    Title = "Starter Bash"
+                };
+                dialog.Commands.Add(new UICommand { Label = "Yes", Id = 0 });
+                dialog.Commands.Add(new UICommand { Label = "No", Id = 1 });
+                var ret = await dialog.ShowAsync();
+                if ((int)ret.Id == 1)
+                {
+                    return;
+                }
+            }
+
             BashScript = "";
             Json = "";
             Parameters.Clear();
@@ -562,7 +595,7 @@ namespace starterBash
             {
                 await FileIO.WriteTextAsync(_file, toSave);
             }
-            UpdateTextInfo(true);
+            
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
