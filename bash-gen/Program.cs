@@ -1,4 +1,4 @@
-﻿using sharedBashGen;
+﻿using bashGeneratorSharedModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
