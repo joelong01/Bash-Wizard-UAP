@@ -1,0 +1,27 @@
+{
+  "ScriptName": "",
+  "EchoInput": true,
+  "CreateLogLines": true,
+  "Parameters": [
+    {
+      "ShortParam": "",
+      "LongParam": "",
+      "Description": "",
+      "VarName": "",
+      "AcceptsValue": true,
+      "Default": "",
+      "Required": true,
+      "SetVal": "$2"
+    },
+    {
+      "ShortParam": "",
+      "LongParam": "",
+      "Description": "",
+      "VarName": "",
+      "AcceptsValue": true,
+      "Default": "",
+      "Required": true,
+      "SetVal": "$2"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using sharedBashGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,25 +20,7 @@ using Windows.UI.Xaml.Input;
 namespace starterBash
 {
 
-    public class MainPageModel
-    {
 
-        public string ScriptName { get; set; } = null;
-        public bool EchoInput { get; set; } = true;
-        public bool CreateLogLines { get; set; } = true;
-        public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
-
-        public MainPageModel(string name, ObservableCollection<ParameterItem> list, bool echoInput, bool createLogLines)
-        {
-            ScriptName = name;
-            if (list != null)
-            {
-                Parameters.AddRange(list);
-            }
-            EchoInput = echoInput;
-            CreateLogLines = createLogLines;
-        }
-    }
 
 
     /// <summary>
@@ -61,13 +43,30 @@ namespace starterBash
         public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
-        public static readonly DependencyProperty CreateLogLinesProperty = DependencyProperty.Register("CreateLogLines", typeof(bool), typeof(MainPage), new PropertyMetadata(true, CreateLogLinesChanged));
-        public bool CreateLogLines
+        public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
+        public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(true, TeeToLogFileChanged));
+        public bool TeeToLogFile
         {
-            get => (bool)GetValue(CreateLogLinesProperty);
-            set => SetValue(CreateLogLinesProperty, value);
+            get => (bool)GetValue(TeeToLogFileProperty);
+            set => SetValue(TeeToLogFileProperty, value);
         }
-        private static void CreateLogLinesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void TeeToLogFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (bool)e.NewValue;
+            depPropClass?.SetTeeToLogFile(depPropValue);
+        }
+        private void SetTeeToLogFile(bool value)
+        {
+            UpdateTextInfo(true);
+        }
+
+        public bool CreateLogFile
+        {
+            get => (bool)GetValue(CreateLogFileProperty);
+            set => SetValue(CreateLogFileProperty, value);
+        }
+        private static void CreateLogFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var depPropClass = d as MainPage;
             var depPropValue = (bool)e.NewValue;
@@ -75,7 +74,40 @@ namespace starterBash
         }
         private void SetCreateLogLines(bool value)
         {
+            
+
+            ParameterItem logParameter = null;
+            foreach (var param in Parameters)
+            {
+                if (param.VarName == "logFileDir")
+                {
+                    logParameter = param;
+                    break;
+                }
+            }
+
+            //
+            //  need to have the right parameter for long line to work correctly -- make sure it is there, and if not, add it.
+            if (value && logParameter == null)
+            {
+                
+                logParameter = new ParameterItem()
+                {
+                    LongParam = "log-directory",
+                    ShortParam = "g",
+                    Description = "directory for the log file.  the log file name will be based on the script name",
+                    VarName = "logFileDir",
+                    Default = "\"./\"",
+                    AcceptsValue = true,
+                    Required = false,
+                    SetVal = "$2"
+                };
+
+                Parameters.Add(logParameter);
+            }
+
             UpdateTextInfo(true);
+
         }
 
 
@@ -216,180 +248,16 @@ namespace starterBash
         }
         private string GenerateBash()
         {
-            string validateString = ValidateParameters();
-            if (validateString != "")
+            var list = new List<ParameterItem>(Parameters);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            try
             {
-                return validateString;
+                return model.ToBash();
             }
-            StringBuilder sb = new StringBuilder(4096);
-            string nl = "\n";
-            sb.Append($"#!/bin/bash{nl}{nl}");
-            sb.Append($"usage() {{{nl}");
-            sb.Append($"\techo \"Usage: $0 ");
-            foreach (var param in Parameters)
+            catch (Exception e)
             {
-                sb.Append($" -{param.ShortParam}|--{param.LongParam}");
+                return $"Exception caught creating bash script:\n\n{e.Message}";
             }
-
-            sb.Append($"\" 1>&2 {nl} ");
-            sb.Append($"\techo \"\"{nl}");
-            string required = "";
-
-            foreach (var param in Parameters)
-            {
-                if (param.Required)
-                {
-                    required = "(Required)";
-                }
-                else
-                {
-                    required = "(Optional)";
-                }
-                sb.Append($"\techo \" -{param.ShortParam} | --{param.LongParam,-30} {required,-15} {param.Description}\"{nl}");
-            }
-            sb.Append($"\techo \"\"{nl}");
-            sb.Append($"\texit 1{nl}");
-            sb.Append($"}}{nl}{nl}");
-
-            // echoInput()
-
-            sb.Append($"echoInput() {{ {nl}\techo \"{ScriptName}:\"{nl}");
-            foreach (var param in Parameters)
-            {
-                sb.Append($"\techo \"\t{param.VarName,-30} ${param.VarName}\"{nl}");
-            }
-            sb.Append($"}}{nl}{nl}");
-
-            // input variables
-            sb.Append($"# input variables {nl}");
-            foreach (var param in Parameters)
-            {
-                sb.Append($"declare {param.VarName}={param.Default}{nl}");
-            }
-            sb.Append($"{nl}");
-            sb.Append($"# make sure this version of *nix supports the right getopt {nl}");
-            sb.Append($"! getopt --test > /dev/null{nl}");
-            sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 4 ]]; then{nl}");
-            sb.Append($"\techo \"I’m sorry, 'getopt --test' failed in this environment.\"{nl}");
-            sb.Append($"\texit 1{nl}");
-            sb.Append($"fi{nl}{nl}");
-
-
-            sb.Append("OPTIONS=");
-            foreach (var param in Parameters)
-            {
-                sb.Append($"{param.ShortParam}");
-                if (param.AcceptsValue)
-                {
-                    sb.Append(":");
-                }
-            }
-
-            sb.Append($"{nl}");
-
-
-            sb.Append("LONGOPTS=");
-            foreach (var param in Parameters)
-            {
-                sb.Append($"{param.LongParam}");
-                if (param.AcceptsValue)
-                {
-                    sb.Append(":");
-                }
-                sb.Append(",");
-            }
-
-            sb.Append($"{nl}");
-
-            sb.Append($"# -use ! and PIPESTATUS to get exit code with errexit set{nl}");
-            sb.Append($"# -temporarily store output to be able to check for errors{nl}");
-            sb.Append($"# -activate quoting/enhanced mode (e.g. by writing out \"--options\"){nl}");
-            sb.Append($"# -pass arguments only via   -- \"$@\"   to separate them correctly{nl}");
-            sb.Append("! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name \"$0\" -- \"$@\")");
-            sb.Append($"{nl}");
-            sb.Append($"if [[ ${{PIPESTATUS[0]}} -ne 0 ]]; then{nl}");
-            sb.Append($"\t# e.g. return value is 1{nl}");
-            sb.Append($"\t# then getopt has complained about wrong arguments to stdout{nl}");
-            sb.Append($"\techo \"you might be running bash on a Mac.  if so, run 'brew install gnu-getopt' to make the command line processing work.\"{nl}");
-            sb.Append($"\tusage{nl}");
-            sb.Append($"\texit 2{nl}");
-            sb.Append($"fi{nl}{nl}");
-
-
-            sb.Append($"# read getopt’s output this way to handle the quoting right:{nl}");
-            sb.Append($"eval set -- \"$PARSED\"{nl}");
-            sb.Append($"# now enjoy the options in order and nicely split until we see --{nl}");
-
-            sb.Append($"while true; do{nl}");
-            sb.Append($"\tcase \"$1\" in{nl}");
-            foreach (var param in Parameters)
-            {
-
-                sb.Append($"\t\t-{param.ShortParam}|--{param.LongParam}){nl}");
-                sb.Append($"\t\t\t{param.VarName}={param.SetVal}{nl}");
-                sb.Append($"\t\t\tshift ");
-                if (param.AcceptsValue)
-                {
-                    sb.Append($"2{nl}");
-                }
-                else
-                {
-                    sb.Append($"1{nl}");
-                }
-                sb.Append($"\t\t;;{nl}");
-            }
-            sb.Append($"\t\t--){nl}\t\t\tshift{nl}\t\t\tbreak{nl}\t\t;;{nl}\t\t*){nl}\t\t\techo \"Invalid option $1 $2\"{nl}\t\t\texit 3{nl}\t\t;;{nl}\tesac{nl}done{nl}{nl}if{nl}");
-            string shortString = "";
-            foreach (var param in Parameters)
-            {
-                if (param.Required)
-                {
-                    shortString += $"[ -z \"${{{param.VarName}}}\" ] || ";
-                }
-            }
-            if (shortString.Length > 3)
-            {
-                shortString = shortString.Substring(0, shortString.Length - " || ".Length);
-                sb.Append($"{shortString}");
-            }
-
-
-            sb.Append($"; then{nl}");
-            sb.Append($"\techo \"\"{nl}");
-            sb.Append($"\techo \"Required parameter missing! \"{nl}");
-            sb.Append($"\techoInput #make it easy to see what is missing{nl}");
-            sb.Append($"\techo \"\"{nl}");
-            sb.Append($"\tusage{nl}");
-            sb.Append($"\texit 2{nl}");
-            sb.Append($"fi{nl}{nl}");
-
-            if (this.EchoInput == true)
-            {
-                sb.Append($"echoInput{nl}{nl}");
-            }
-
-            /*
-             *declare LOG_FILE="${logFileDir}createResourceGroup.log"
-            mkdir $logFileDir  2>> /dev/null
-            rm -f $LOG_FILE  >> /dev/null
-
-
-            time=$(date +"%m/%d/%y @ %r")
-            echo "started: $time" >> $LOG_FILE 
-             * 
-             * 
-             */
-            if (this.CreateLogLines)
-            {
-                sb.Append($"declare LOG_FILE=\"${{logFileDir}}{this.ScriptName}.log\"{nl}");
-                sb.Append($"mkdir \"${{logFileDir}}\" 2>> /dev/null{nl}");
-                sb.Append($"rm -f \"${{LOG_FILE}}\"  >> /dev/null{nl}");
-                sb.Append($"time=$(date +\"%m/%d/%y @ %r\"){nl}");
-                sb.Append($"echo \"started: $time\" >> \"${{LOG_FILE}}\"{nl}");
-            }
-            sb.Append($"#---------- see https://github.com/joelong01/starterBash ----------------{nl}");
-            sb.Append($"# ================ END OF STARTERBASH.EXE GENERATED CODE ================{nl}{nl}");            
-            return sb.ToString();
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -456,8 +324,9 @@ namespace starterBash
 
         private string Serialize()
         {
-            MainPageModel model = new MainPageModel(ScriptName, Parameters, EchoInput, CreateLogLines);
-            return JsonConvert.SerializeObject(model, Formatting.Indented);
+            var list = new List<ParameterItem>(Parameters);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            return model.Serialize();
         }
 
 
@@ -494,7 +363,7 @@ namespace starterBash
 
             try
             {
-                var result = JsonConvert.DeserializeObject<MainPageModel>(s);
+                var result = ConfigModel.Deserialize(s);
                 if (result != null)
                 {
                     Parameters.Clear();
@@ -595,7 +464,7 @@ namespace starterBash
             {
                 await FileIO.WriteTextAsync(_file, toSave);
             }
-            
+
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
