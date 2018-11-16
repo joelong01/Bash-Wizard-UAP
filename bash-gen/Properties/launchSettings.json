@@ -2,7 +2,8 @@
   "profiles": {
     "bash-gen": {
       "commandName": "Project",
-      "commandLineArgs": "-f E:\\GitHub\\starterBash\\input.json"
+      "commandLineArgs": "-f E:\\GitHub\\starterBash\\input.json",
+      "workingDirectory": "E:\\GitHub\\starterBash"
     }
   }
 }

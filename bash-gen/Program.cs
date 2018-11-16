@@ -28,21 +28,22 @@ Usage:
 
         static void Main(string[] args)
         {
-            Debug.WriteLine(Environment.CommandLine);
+            Console.WriteLine(Environment.CommandLine);
             var configFile = "";
             try
             {
                 for (int i = 0; i < args.Length; i++)
                 {
                     var param = args[i];
+                    Console.WriteLine($"param: {param}");
                     switch (param)
                     {
                         case "-c":
                             CreateDefaultConfigFile();
                             return;
                         case "-f":
-                            configFile = args[i + 1];
-                            break;                     
+                            LoadAndCreateBash(args[i + 1]);
+                            return;
                         default:
                             ShowUsage();
                             return;
@@ -57,6 +58,7 @@ Usage:
 
             if (configFile == "")
             {
+                Console.WriteLine("ConfigFile is null!");
                 ShowUsage();
                 return;
             }
@@ -72,6 +74,13 @@ Usage:
                 Console.WriteLine($"Exception thrown: {e.Message}");
             }
 
+        }
+
+        private static void LoadAndCreateBash(string configFile)
+        {            
+            string Json = System.IO.File.ReadAllText(configFile);
+            var model = ConfigModel.Deserialize(Json);
+            Console.WriteLine(model.ToBash());
         }
 
         private static void ShowUsage()

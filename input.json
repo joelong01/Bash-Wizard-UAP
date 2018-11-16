@@ -1,26 +1,97 @@
 {
-  "ScriptName": "",
+  "ScriptName": "addExtendedMonitoringToLinuxVms",
   "EchoInput": true,
-  "CreateLogLines": true,
+  "CreateLogFile": true,
+  "TeeToLogFile": true,
   "Parameters": [
     {
-      "ShortParam": "",
-      "LongParam": "",
-      "Description": "",
-      "VarName": "",
+      "ShortParam": "r",
+      "LongParam": "resource-group",
+      "Description": "Azure Resource Group",
+      "VarName": "resourceGroup",
       "AcceptsValue": true,
-      "Default": "",
+      "Default": "\"\"",
       "Required": true,
       "SetVal": "$2"
     },
     {
-      "ShortParam": "",
-      "LongParam": "",
-      "Description": "",
-      "VarName": "",
+      "ShortParam": "l",
+      "LongParam": "location",
+      "Description": "the location of the VMs",
+      "VarName": "location",
       "AcceptsValue": true,
-      "Default": "",
+      "Default": "westus2",
       "Required": true,
+      "SetVal": "$2"
+    },
+    {
+      "ShortParam": "n",
+      "LongParam": "storage-account-name",
+      "Description": "Azure Storage Account that stores the telemetry.",
+      "VarName": "storageAccountName",
+      "AcceptsValue": true,
+      "Default": "\"\"",
+      "Required": true,
+      "SetVal": "$2"
+    },
+    {
+      "ShortParam": "d",
+      "LongParam": "delete",
+      "Description": "deletes the Linux Azure Diagnostics Extension from all the VMs in --resource-group",
+      "VarName": "deleteExtension",
+      "AcceptsValue": false,
+      "Default": "\"no\"",
+      "Required": false,
+      "SetVal": "\"yes\""
+    },
+    {
+      "ShortParam": "f",
+      "LongParam": "data-file",
+      "Description": "the file that contains that JSON file for the extension",
+      "VarName": "dataFile",
+      "AcceptsValue": true,
+      "Default": "\"\"",
+      "Required": true,
+      "SetVal": "$2"
+    },
+    {
+      "ShortParam": "a",
+      "LongParam": "add-extension",
+      "Description": "adds the Linux Azure Diagnostics Extension from all the VMs in --resource-group",
+      "VarName": "addExtension",
+      "AcceptsValue": false,
+      "Default": "\"no\"",
+      "Required": false,
+      "SetVal": "\"yes\""
+    },
+    {
+      "ShortParam": "e",
+      "LongParam": "alert-email",
+      "Description": "the email to send the alert to (optional if no alert is added)",
+      "VarName": "emailAlert",
+      "AcceptsValue": true,
+      "Default": "\"\"",
+      "Required": false,
+      "SetVal": "$2"
+    },
+    {
+      "ShortParam": "t",
+      "LongParam": "add-alerts",
+      "Description": "adds the default alerts to all the VMs in --resource-group",
+      "VarName": "addAlerts",
+      "AcceptsValue": false,
+      "Default": "\"no\"",
+      "Required": false,
+      "SetVal": "\"yes\""
+    },
+    {
+      "ShortParam": "g",
+      "LongParam": "log-directory",
+      "Description": "directory for the log file.  the log file name will be based on the script name",
+      "VarName": "logFileDir",
+      "AcceptsValue": true,
+      "Default": "\"./\"",
+      "Required": false,
       "SetVal": "$2"
     }
   ]
