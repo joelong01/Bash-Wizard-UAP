@@ -35,6 +35,71 @@ namespace bashGeneratorSharedModels
             return JsonConvert.DeserializeObject<ConfigModel>(json);
         }
 
+        /// <summary>
+        ///     we want something like
+        ///      "createResourceGroup.sh": {
+        ///       "Name": "createResourceGroup.sh",
+        ///       "Passthrough": [
+        ///           {
+        ///               "location": "uswest2",
+        ///               "delete": "false",
+        ///               "create": "true"
+        ///           }
+        ///       ],
+        ///       "Input": [
+        ///           {
+        ///               "confirm-on-delete": "true"
+        ///           }
+        ///        ]
+        ///       },
+        ///     
+        /// </summary>
+        /// <returns></returns>
+        public string SerializeInputJson()
+        {
+
+
+            string nl = "\n";
+            string indentOne = "  ";
+            string indentTwo = "      ";
+            string indentThree = "         ";
+            StringBuilder sb = new StringBuilder($"{indentOne}\"{this.ScriptName}\": {{{nl}{indentTwo}\"Name\":\"{ScriptName}\",{nl}{indentTwo}\"Passthrough\": {nl}{indentTwo}{{{nl}");
+            string input = "";
+            string passthrough = "";
+            char[] quotes = { '"'};
+            char[] commadNewLine = { ',', '\n', ' ' };
+            foreach (var param in Parameters)
+            {
+                string defValue = param.Default;
+                defValue = defValue.TrimStart(quotes);
+                defValue = defValue.TrimEnd(quotes);
+
+                if (param.PassthroughParam)
+                {                    
+                    input += $"{indentThree}\"{param.LongParam}\": \"{defValue}\",{nl}";
+                }
+                else
+                {
+                    passthrough += $"{indentThree}\"{param.LongParam}\": \"{defValue}\",{nl}";
+                }
+            }
+            //  delete trailing "," int the temp strings            
+            passthrough = passthrough.TrimEnd(commadNewLine);
+            input = input.TrimEnd(commadNewLine);
+            sb.Append(input);
+
+            sb.Append($"{nl}{indentTwo}}},{nl}");
+
+            sb.Append($"{indentTwo}\"Input\": {{{nl}");
+            sb.Append(passthrough);
+            sb.Append($"{nl}{indentTwo}}}{nl}{indentTwo}{nl}{indentOne}}},");
+
+
+
+            return sb.ToString();
+
+        }
+
         private string ValidateParameters()
         {
             //verify short names are unique
@@ -249,7 +314,7 @@ namespace bashGeneratorSharedModels
                 sb.Append($"#creating a tee so that we capture all the output to the log file{nl}");
                 sb.Append($"{{{nl}");
                 sb.Append($"time=$(date +\"%m/%d/%y @ %r\"){nl}");
-                sb.Append($"echo \"started: $time\" >> \"${{LOG_FILE}}\"{nl}{nl}");
+                sb.Append($"echo \"started: $time\"{nl}{nl}");
                 if (this.EchoInput == true)
                 {
                     sb.Append($"echoInput{nl}{nl}");
@@ -257,7 +322,7 @@ namespace bashGeneratorSharedModels
                 }
                 sb.Append($"# --- YOUR SCRIPT STARTS HERE ---{nl}{nl}{nl}{nl}# --- YOUR SCRIPT ENDS HERE ---{nl}");
                 sb.Append($"time=$(date +\"%m/%d/%y @ %r\"){nl}");
-                sb.Append($"echo \"ended: $time\" >> \"${{LOG_FILE}}\"{nl}");
+                sb.Append($"echo \"ended: $time\"{nl}");
                 sb.Append($"}} | tee -a \"${{LOG_FILE}}\"");
             }
 

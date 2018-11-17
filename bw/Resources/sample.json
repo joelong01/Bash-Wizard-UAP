@@ -1,0 +1,34 @@
+﻿{
+  "ScriptName": "script Name -- should end in .sh",
+  "EchoInput": true,
+  "CreateLogFile": true,
+  "TeeToLogFile": true,
+  "Parameters": [
+    {
+      "ShortParam": "f",
+      "LongParam": "config-file",
+      "Description": "the config file",
+      "VarName": "configFile",
+      "AcceptsValue": true,
+      "Default": ".",
+      "Required": true,
+      "SetVal": "$2",
+      "InputValue": "",
+      "SetInInputFile": false,
+      "PassthroughParam": false
+    },
+    {
+      "ShortParam": "g",
+      "LongParam": "log-directory",
+      "Description": "directory for the log file.  the log file name will be based on the script name",
+      "VarName": "logFileDir",
+      "AcceptsValue": true,
+      "Default": "\"./\"",
+      "Required": false,
+      "SetVal": "$2",
+      "InputValue": "",
+      "SetInInputFile": true,
+      "PassthroughParam": true
+    }
+  ]
+}

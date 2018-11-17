@@ -1,7 +1,8 @@
 {
   "profiles": {
     "bash-gen": {
-      "commandName": "Project",
+      "commandName": "Executable",
+      "executablePath": "E:\\GitHub\\starterBash\\bash-gen\\bin\\Release\\netcoreapp2.1\\publish\\bash-wiz.exe",
       "commandLineArgs": "-f E:\\GitHub\\starterBash\\input.json",
       "workingDirectory": "E:\\GitHub\\starterBash"
     }

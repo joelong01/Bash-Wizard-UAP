@@ -16,7 +16,7 @@ using Windows.UI.Xaml.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-namespace starterBash
+namespace bashWizard
 {
 
 
@@ -313,16 +313,7 @@ namespace starterBash
 
         private string GenerateInputBash()
         {
-            var list = new List<ParameterItem>(Parameters);
-            InputModel model = new InputModel(ScriptName, list);
-            try
-            {
-                return model.ToBash();
-            }
-            catch (Exception e)
-            {
-                return $"Exception caught creating bash script:\n\n{e.Message}";
-            }
+            return "hnmnmm";
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -397,8 +388,8 @@ namespace starterBash
         private string SerializeInputParameters()
         {
             var list = new List<ParameterItem>(Parameters);
-            InputModel model = new InputModel(ScriptName, list);
-            return model.Serialize();
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            return model.SerializeInputJson();
         }
 
 
