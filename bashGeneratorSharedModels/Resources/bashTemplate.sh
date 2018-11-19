@@ -1,5 +1,5 @@
 ﻿#!/bin/bash
-#---------- see https://github.com/joelong01/starterBash ----------------
+#---------- see https://github.com/joelong01/Bash-Wizard----------------
 
 # make sure this version of *nix supports the right getopt 
 ! getopt --test > /dev/null

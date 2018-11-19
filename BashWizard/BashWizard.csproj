@@ -4,20 +4,20 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{1E4EA646-51F2-4215-9468-0E16BF4F7EB9}</ProjectGuid>
+    <ProjectGuid>{C34D7819-2DD3-4234-9908-C3863D840430}</ProjectGuid>
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>starterBash</RootNamespace>
-    <AssemblyName>starterBash</AssemblyName>
+    <RootNamespace>BashWizard</RootNamespace>
+    <AssemblyName>BashWizard</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.16299.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.17134.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
-    <PackageCertificateKeyFile>starterBash_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>BashWizard_TemporaryKey.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -30,6 +30,7 @@
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
@@ -105,9 +106,10 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-    <None Include="starterBash_TemporaryKey.pfx" />
+    <None Include="BashWizard_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\EndOfScript.txt" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -116,7 +118,6 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
-    <EmbeddedResource Include="Resources\EndOfScript.txt" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -130,12 +131,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.2</Version>
+      <Version>6.1.7</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\bashGeneratorSharedModels\bashWizardLib.csproj">
-      <Project>{55458040-b7b9-4411-899a-282263a35d5c}</Project>
+      <Project>{55458040-B7B9-4411-899A-282263A35D5C}</Project>
       <Name>bashWizardLib</Name>
     </ProjectReference>
   </ItemGroup>
