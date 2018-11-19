@@ -1,15 +1,15 @@
-﻿using sharedBashGen;
+﻿using bashGeneratorSharedModels;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Text;
 
 namespace bash_gen
 {
-
-    class Program
+    internal class Program
     {
-
-        static readonly string usage =
+        private static readonly string usage =
  @" 
 Usage:  
 
@@ -25,29 +25,28 @@ Usage:
 
     example: bash.gen -c > test.json";
 
-
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.WriteLine(Environment.CommandLine);
+
+            string s = EmbeddedResource.GetResourceFile("Data/useage.txt");
             var configFile = "";
             try
             {
-                for (int i = 0; i < args.Length; i++)
+
+                var param = args[0];
+                Console.WriteLine($"param: {param}");
+                switch (param)
                 {
-                    var param = args[i];
-                    Console.WriteLine($"param: {param}");
-                    switch (param)
-                    {
-                        case "-c":
-                            CreateDefaultConfigFile();
-                            return;
-                        case "-f":
-                            LoadAndCreateBash(args[i + 1]);
-                            return;
-                        default:
-                            ShowUsage();
-                            return;
-                    }
+                    case "-c":
+                        CreateDefaultConfigFile();
+                        return;
+                    case "-f":
+                        LoadAndCreateBash(args[1]);
+                        return;
+                    default:
+                        ShowUsage();
+                        return;
                 }
             }
             catch (Exception e)
@@ -69,7 +68,7 @@ Usage:
                 Console.WriteLine(model.ToBash());
 
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine($"Exception thrown: {e.Message}");
             }
@@ -77,7 +76,7 @@ Usage:
         }
 
         private static void LoadAndCreateBash(string configFile)
-        {            
+        {
             string Json = System.IO.File.ReadAllText(configFile);
             var model = ConfigModel.Deserialize(Json);
             Console.WriteLine(model.ToBash());
@@ -109,6 +108,26 @@ Usage:
             ConfigModel model = new ConfigModel("", list, true, true, true);
             Console.WriteLine(model.Serialize());
 
+        }
+
+        public static class EmbeddedResource
+        {
+            public static string GetResourceFile(string namespaceAndFileName)
+            {
+                try
+                {
+                    using (var stream = typeof(EmbeddedResource).GetTypeInfo().Assembly.GetManifestResourceStream(namespaceAndFileName))
+                    using (var reader = new StreamReader(stream, Encoding.UTF8))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+
+                catch
+                {
+                    throw new Exception($"Failed to read Embedded Resource {namespaceAndFileName}");
+                }
+            }
         }
     }
 }

@@ -116,6 +116,7 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <EmbeddedResource Include="Resources\EndOfScript.txt" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -133,9 +134,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\bashGeneratorSharedModels\bashGeneratorSharedModels.csproj">
+    <ProjectReference Include="..\bashGeneratorSharedModels\bashWizardLib.csproj">
       <Project>{55458040-b7b9-4411-899a-282263a35d5c}</Project>
-      <Name>bashGeneratorSharedModels</Name>
+      <Name>bashWizardLib</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

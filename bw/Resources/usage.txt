@@ -1,0 +1,26 @@
+﻿Usage:  
+
+    Flag                            Required    Parameter           Description
+    =========================       ========    ========           ============================================================
+    -f | --input-file               (no)        <config_file.bw>   takes a Bash Wizard file and outputs to stdout a Bash script
+    -c | --create-sample-json       (no)        (none)             echos a simple Bash Wizard file to stdout so you can edit it 
+    -i | --create-input-json        (no)        (none)             requires -f to be set.  takes the input from -f and echos to
+                                                                   stdout a JSON file that has the input vars set to default
+    
+    Examples:
+    1. take config_file.JSON and output a bash scripts
+    	
+    	bw -f <config_file.JSON>	
+                        
+    2. redirect to a .sh file
+    	
+    	bw -f test.json > test.sh
+        
+    3. create a sample config file and redirect to test.json
+    		
+    	bw -c > test.json
+    
+    4. take a Bash Wizard json file and create a test.json that has the default sets that you can use to specify parameter
+       values for Bash Wizard generated scripts
+    
+       bw -i test.json > inputParamsForTestScript.json

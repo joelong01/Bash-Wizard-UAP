@@ -1,8 +1,8 @@
 ﻿<Application
-    x:Class="starterBash.App"
+    x:Class="bashWizard.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:starterBash"
+    xmlns:local="using:bashWizard"
     RequestedTheme="Dark">
 
 </Application>

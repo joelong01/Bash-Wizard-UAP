@@ -1,10 +1,11 @@
-﻿using sharedBashGen;
+﻿using bashGeneratorSharedModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
@@ -17,7 +18,7 @@ using Windows.UI.Xaml.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-namespace starterBash
+namespace bashWizard
 {
 
 
@@ -32,11 +33,13 @@ namespace starterBash
 
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
         private ParameterItem _selectedItem = null;
-        private StorageFile _file = null;
-
+        private StorageFile _fileBashScript = null;
+        private bool _opening = false;
+        private string _endScript = "";
         public MainPage()
         {
             this.InitializeComponent();
+            _endScript = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "EndOfScript.txt");
         }
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
@@ -44,7 +47,75 @@ namespace starterBash
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
         public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
-        public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(true, TeeToLogFileChanged));
+        public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, TeeToLogFileChanged));
+        public static readonly DependencyProperty AcceptsInputFileProperty = DependencyProperty.Register("AcceptsInputFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, AcceptsInputFileChanged));
+        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public string EndScript
+        {
+            get => (string)GetValue(EndScriptProperty);
+            set => SetValue(EndScriptProperty, value);
+        }
+        public bool AcceptsInputFile
+        {
+            get => (bool)GetValue(AcceptsInputFileProperty);
+            set => SetValue(AcceptsInputFileProperty, value);
+        }
+        private static void AcceptsInputFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (bool)e.NewValue;
+            depPropClass?.SetAcceptsInputFile(depPropValue);
+        }
+        private void SetAcceptsInputFile(bool newValue)
+        {
+
+
+            // i is the short name and input-file is the long name for the 
+            ParameterItem acceptsInputParam = null;
+            //
+            //  see if we already have the parameter
+            foreach (var param in Parameters)
+            {
+                if (param.ShortParam == "i" && param.LongParam == "input-file")
+                {
+                    acceptsInputParam = param;
+                    break;
+                }
+            }
+            if (newValue)
+            {
+                if (acceptsInputParam == null)
+                {
+                    acceptsInputParam = new ParameterItem()
+                    {
+                        ShortParam = "i",
+                        LongParam = "input-file",
+                        VarName = "inputFile",
+                        Description = "filename that contains the JSON values to drive the script.  command line overrides file",
+                        AcceptsValue = true,
+                        Default = $"{ScriptName}.input.json",
+                        Required = false,
+                        SetVal = "$2"
+                    };
+
+                    Parameters.Insert(0, acceptsInputParam);
+                }
+            }
+            else
+            {
+                if (acceptsInputParam != null)
+                {
+                    Parameters.Remove(acceptsInputParam);
+                }
+            }
+
+
+            UpdateTextInfo(true);
+        }
+
+
+
+
         public bool TeeToLogFile
         {
             get => (bool)GetValue(TeeToLogFileProperty);
@@ -58,6 +129,15 @@ namespace starterBash
         }
         private void SetTeeToLogFile(bool value)
         {
+            if (value)
+            {
+                EndScript = _endScript;
+            }
+            else
+            {
+                EndScript = "";
+            }
+
             UpdateTextInfo(true);
         }
 
@@ -70,11 +150,11 @@ namespace starterBash
         {
             var depPropClass = d as MainPage;
             var depPropValue = (bool)e.NewValue;
-            depPropClass?.SetCreateLogLines(depPropValue);
+            depPropClass?.SetCreateLogDir(depPropValue);
         }
-        private void SetCreateLogLines(bool value)
+        private void SetCreateLogDir(bool value)
         {
-            
+
 
             ParameterItem logParameter = null;
             foreach (var param in Parameters)
@@ -90,7 +170,7 @@ namespace starterBash
             //  need to have the right parameter for long line to work correctly -- make sure it is there, and if not, add it.
             if (value && logParameter == null)
             {
-                
+
                 logParameter = new ParameterItem()
                 {
                     LongParam = "log-directory",
@@ -104,9 +184,11 @@ namespace starterBash
                 };
 
                 Parameters.Add(logParameter);
+                logParameter.PropertyChanged += ParameterPropertyChanged;
             }
 
             UpdateTextInfo(true);
+
 
         }
 
@@ -190,10 +272,15 @@ namespace starterBash
 
         private void UpdateTextInfo(bool setJsonText)
         {
+            if (_opening)
+            {
+                return;
+            }
+
             BashScript = GenerateBash();
             if (setJsonText)
             {
-                Json = Serialize();
+                Json = SerializeParameters();
             }
 
             splitView.IsPaneOpen = false;
@@ -202,18 +289,29 @@ namespace starterBash
 
         private void AsyncSave()
         {
+            if (_fileBashScript == null)
+            {
+                return;
+            }
+
+            if (_opening)
+            {
+                return;
+            }
+
             var ignored = CoreWindow.GetForCurrentThread().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
             {
                 try
                 {
-                    string toSave = Serialize();
-                    if (_file != null)
+                    string toSave = SerializeParameters();
+                    if (_fileBashScript != null)
                     {
-                        await FileIO.WriteTextAsync(_file, toSave);
+                        await FileIO.WriteTextAsync(_fileBashScript, toSave);
                     }
                 }
                 catch { }  // because we are doing this an an asyc way, it is very possible that the file is locked.  we'll just each the exception and it will (eventually) save
             });
+
         }
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -223,33 +321,11 @@ namespace starterBash
                 _selectedItem = e.AddedItems[0] as ParameterItem;
             }
         }
-        /// <summary>
-        ///     put all data validation here
-        /// </summary>
-        private string ValidateParameters()
-        {
-            //verify short names are unique
-            HashSet<string> shortNames = new HashSet<string>();
-            HashSet<string> longNames = new HashSet<string>();
-            foreach (var param in Parameters)
-            {
-                if (!shortNames.Add(param.ShortParam))
-                {
-                    return $"{param.ShortParam} exists at least twice.  please fix it.";
-                }
-                if (!longNames.Add(param.LongParam))
-                {
-                    return $"{param.LongParam} exists at least twice.  please fix it.";
-                }
-            }
 
-            return "";
-
-        }
         private string GenerateBash()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
             try
             {
                 return model.ToBash();
@@ -258,6 +334,11 @@ namespace starterBash
             {
                 return $"Exception caught creating bash script:\n\n{e.Message}";
             }
+        }
+
+        private string GenerateInputBash()
+        {
+            return "hnmnmm";
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -322,14 +403,12 @@ namespace starterBash
             UpdateTextInfo(true);
         }
 
-        private string Serialize()
+        private string SerializeParameters()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
             return model.Serialize();
         }
-
-
 
 
         private async void OnOpen(object sender, RoutedEventArgs e)
@@ -342,12 +421,26 @@ namespace starterBash
             };
 
             picker.FileTypeFilter.Add(".param");
-            _file = await picker.PickSingleFileAsync();
-            if (_file != null)
+            _fileBashScript = await picker.PickSingleFileAsync();
+            if (_fileBashScript != null)
             {
-                string s = await FileIO.ReadTextAsync(_file);
+                try
+                {
+                    _opening = true;
+                    string s = await FileIO.ReadTextAsync(_fileBashScript);
+                    Deserialize(s, true);
+                }
+                catch
+                {
+                    BashScript = "Error opening file";
+                    _fileBashScript = null;
+                }
+                finally
+                {
+                    _opening = false;
+                    UpdateTextInfo(true);
+                }
 
-                Deserialize(s, true);
             }
 
 
@@ -370,13 +463,15 @@ namespace starterBash
 
                     foreach (var param in result.Parameters)
                     {
-
                         Parameters.Add(param);
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
-
                     this.ScriptName = result.ScriptName;
                     this.EchoInput = result.EchoInput;
+                    this.CreateLogFile = result.CreateLogFile;
+                    this.TeeToLogFile = result.TeeToLogFile;
+                    this.AcceptsInputFile = result.AcceptInputFile;
+
                     UpdateTextInfo(setJsonText);
                 }
             }
@@ -427,7 +522,7 @@ namespace starterBash
             Json = "";
             Parameters.Clear();
             ScriptName = "";
-            _file = null;
+            _fileBashScript = null;
         }
 
         private async void OnSaveAs(object sender, RoutedEventArgs e)
@@ -439,14 +534,16 @@ namespace starterBash
             };
             savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
             savePicker.SuggestedFileName = $"{ScriptName}.param";
-            _file = await savePicker.PickSaveFileAsync();
+            _fileBashScript = await savePicker.PickSaveFileAsync();
+
+
             await Save();
 
         }
 
         private async void OnSave(object sender, RoutedEventArgs e)
         {
-            if (_file == null)
+            if (_fileBashScript == null)
             {
                 OnSaveAs(sender, e);
             }
@@ -459,10 +556,11 @@ namespace starterBash
 
         private async Task Save()
         {
-            string toSave = Serialize();
-            if (_file != null)
+            string toSave = SerializeParameters();
+
+            if (_fileBashScript != null)
             {
-                await FileIO.WriteTextAsync(_file, toSave);
+                await FileIO.WriteTextAsync(_fileBashScript, toSave);
             }
 
         }
@@ -501,5 +599,20 @@ namespace starterBash
         }
 
 
+        private void OnCopyTopBash(object sender, RoutedEventArgs e)
+        {
+
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(BashScript);
+            Clipboard.SetContent(dataPackage);
+        }
+
+        private void OnCopyJson(object sender, RoutedEventArgs e)
+        {
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(this.Json);
+            Clipboard.SetContent(dataPackage);
+
+        }
     }
 }
