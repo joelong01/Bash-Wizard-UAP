@@ -1,13 +1,11 @@
 ﻿using bashGeneratorSharedModels;
 using System;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 
 
-namespace bw
+namespace BashWizardConsole
 {
-    internal class Program
+    internal class BashWizard
     {
 
 
@@ -29,9 +27,18 @@ namespace bw
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                string usage = EmbeddedResource.GetResourceFile("usage.txt");
+                Console.WriteLine("");
+                var bg = Console.BackgroundColor;
+                var fg = Console.ForegroundColor;
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(e.Message);
+                Console.BackgroundColor = bg; 
+                Console.ForegroundColor = fg;
+                string usage = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "usage.txt");
+                Console.WriteLine("");
                 Console.WriteLine(usage);
+                return;
             }
 
             if (input.IsFlagSet("CreateSample"))
@@ -71,31 +78,9 @@ namespace bw
 
         private static void CreateSample()
         {
-            Console.WriteLine(EmbeddedResource.GetResourceFile("sample.json"));
+            Console.WriteLine(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "sample.json"));
         }
 
-        public static class EmbeddedResource
-        {
-            public static string GetResourceFile(string name)
-            {
-                try
-                {
-                    var assembly = Assembly.GetExecutingAssembly();
-
-                    string resourceName = assembly.GetManifestResourceNames().Single(str => str.EndsWith(name)); // ugh LINQ
-                    using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-                    using (StreamReader reader = new StreamReader(stream))
-                    {
-                        string result = reader.ReadToEnd();
-                        return result;
-                    }
-                }
-
-                catch
-                {
-                    throw new Exception($"Failed to read Embedded Resource {name}");
-                }
-            }
-        }
+       
     }
 }

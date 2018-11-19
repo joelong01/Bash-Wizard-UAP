@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reflection;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
@@ -33,9 +35,11 @@ namespace bashWizard
         private ParameterItem _selectedItem = null;
         private StorageFile _fileBashScript = null;
         private bool _opening = false;
+        private string _endScript = "";
         public MainPage()
         {
             this.InitializeComponent();
+            _endScript = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "EndOfScript.txt");
         }
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
@@ -44,57 +48,73 @@ namespace bashWizard
         public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
         public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
         public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, TeeToLogFileChanged));
-        public static readonly DependencyProperty InputValueProperty = DependencyProperty.Register("InputValue", typeof(string), typeof(MainPage), new PropertyMetadata(true, InputValueChanged));
-        public static readonly DependencyProperty ShowInputDataProperty = DependencyProperty.Register("ShowInputData", typeof(bool), typeof(MainPage), new PropertyMetadata(false, ShowInputDataChanged));
-        public static readonly DependencyProperty PassthroughParamProperty = DependencyProperty.Register("PassthroughParam", typeof(bool), typeof(MainPage), new PropertyMetadata(true, PassthroughParamChanged));
-        public bool PassthroughParam
+        public static readonly DependencyProperty AcceptsInputFileProperty = DependencyProperty.Register("AcceptsInputFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, AcceptsInputFileChanged));
+        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public string EndScript
         {
-            get => (bool)GetValue(PassthroughParamProperty);
-            set => SetValue(PassthroughParamProperty, value);
+            get => (string)GetValue(EndScriptProperty);
+            set => SetValue(EndScriptProperty, value);
         }
-        private static void PassthroughParamChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        public bool AcceptsInputFile
         {
-            var depPropClass = d as MainPage;
-            var depPropValue = (bool)e.NewValue;
-            depPropClass?.SetPassthroughParam(depPropValue);
+            get => (bool)GetValue(AcceptsInputFileProperty);
+            set => SetValue(AcceptsInputFileProperty, value);
         }
-        private void SetPassthroughParam(bool value)
-        {
-            UpdateTextInfo(true);
-        }
-
-        public bool ShowInputData
-        {
-            get => (bool)GetValue(ShowInputDataProperty);
-            set => SetValue(ShowInputDataProperty, value);
-        }
-        private static void ShowInputDataChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void AcceptsInputFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var depPropClass = d as MainPage;
             var depPropValue = (bool)e.NewValue;
-            depPropClass?.SetShowInputData(depPropValue);
+            depPropClass?.SetAcceptsInputFile(depPropValue);
         }
-        private void SetShowInputData(bool value)
+        private void SetAcceptsInputFile(bool newValue)
         {
+
+
+            // i is the short name and input-file is the long name for the 
+            ParameterItem acceptsInputParam = null;
+            //
+            //  see if we already have the parameter
+            foreach (var param in Parameters)
+            {
+                if (param.ShortParam == "i" && param.LongParam == "input-file")
+                {
+                    acceptsInputParam = param;
+                    break;
+                }
+            }
+            if (newValue)
+            {
+                if (acceptsInputParam == null)
+                {
+                    acceptsInputParam = new ParameterItem()
+                    {
+                        ShortParam = "i",
+                        LongParam = "input-file",
+                        VarName = "inputFile",
+                        Description = "filename that contains the JSON values to drive the script.  command line overrides file",
+                        AcceptsValue = true,
+                        Default = $"{ScriptName}.input.json",
+                        Required = false,
+                        SetVal = "$2"
+                    };
+
+                    Parameters.Insert(0, acceptsInputParam);
+                }
+            }
+            else
+            {
+                if (acceptsInputParam != null)
+                {
+                    Parameters.Remove(acceptsInputParam);
+                }
+            }
+
+
             UpdateTextInfo(true);
         }
 
 
-        public string InputValue
-        {
-            get => (string)GetValue(InputValueProperty);
-            set => SetValue(InputValueProperty, value);
-        }
-        private static void InputValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var depPropClass = d as MainPage;
-            var depPropValue = (string)e.NewValue;
-            depPropClass?.SetInputValue(depPropValue);
-        }
-        private void SetInputValue(string value)
-        {
-            UpdateTextInfo(true);
-        }
+
 
         public bool TeeToLogFile
         {
@@ -109,6 +129,15 @@ namespace bashWizard
         }
         private void SetTeeToLogFile(bool value)
         {
+            if (value)
+            {
+                EndScript = _endScript;
+            }
+            else
+            {
+                EndScript = "";
+            }
+
             UpdateTextInfo(true);
         }
 
@@ -155,6 +184,7 @@ namespace bashWizard
                 };
 
                 Parameters.Add(logParameter);
+                logParameter.PropertyChanged += ParameterPropertyChanged;
             }
 
             UpdateTextInfo(true);
@@ -242,29 +272,24 @@ namespace bashWizard
 
         private void UpdateTextInfo(bool setJsonText)
         {
-            if (!ShowInputData)
+            if (_opening)
             {
-                BashScript = GenerateBash();
-                if (setJsonText)
-                {
-                    Json = SerializeParameters();
-                }
+                return;
             }
-            else
+
+            BashScript = GenerateBash();
+            if (setJsonText)
             {
-                BashScript = GenerateInputBash();
-                if (setJsonText)
-                {
-                    Json = SerializeInputParameters();
-                }
+                Json = SerializeParameters();
             }
+
             splitView.IsPaneOpen = false;
             AsyncSave();
         }
 
         private void AsyncSave()
         {
-            if (_fileBashScript == null && !ShowInputData)
+            if (_fileBashScript == null)
             {
                 return;
             }
@@ -300,7 +325,7 @@ namespace bashWizard
         private string GenerateBash()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
             try
             {
                 return model.ToBash();
@@ -381,17 +406,9 @@ namespace bashWizard
         private string SerializeParameters()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
             return model.Serialize();
         }
-
-        private string SerializeInputParameters()
-        {
-            var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile);
-            return model.SerializeInputJson();
-        }
-
 
 
         private async void OnOpen(object sender, RoutedEventArgs e)
@@ -421,6 +438,7 @@ namespace bashWizard
                 finally
                 {
                     _opening = false;
+                    UpdateTextInfo(true);
                 }
 
             }
@@ -438,26 +456,23 @@ namespace bashWizard
 
             try
             {
-                if (!ShowInputData)
+                var result = ConfigModel.Deserialize(s);
+                if (result != null)
                 {
-                    var result = ConfigModel.Deserialize(s);
-                    if (result != null)
+                    Parameters.Clear();
+
+                    foreach (var param in result.Parameters)
                     {
-                        Parameters.Clear();
-
-                        foreach (var param in result.Parameters)
-                        {
-                            Parameters.Add(param);
-                            param.PropertyChanged += ParameterPropertyChanged;
-                        }
-                        this.ScriptName = result.ScriptName;
-                        this.EchoInput = result.EchoInput;
-                        this.CreateLogFile = result.CreateLogFile;
-                        this.TeeToLogFile = result.TeeToLogFile;
-
-
-                        UpdateTextInfo(setJsonText);
+                        Parameters.Add(param);
+                        param.PropertyChanged += ParameterPropertyChanged;
                     }
+                    this.ScriptName = result.ScriptName;
+                    this.EchoInput = result.EchoInput;
+                    this.CreateLogFile = result.CreateLogFile;
+                    this.TeeToLogFile = result.TeeToLogFile;
+                    this.AcceptsInputFile = result.AcceptInputFile;
+
+                    UpdateTextInfo(setJsonText);
                 }
             }
             catch (Exception)
@@ -584,5 +599,20 @@ namespace bashWizard
         }
 
 
+        private void OnCopyTopBash(object sender, RoutedEventArgs e)
+        {
+
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(BashScript);
+            Clipboard.SetContent(dataPackage);
+        }
+
+        private void OnCopyJson(object sender, RoutedEventArgs e)
+        {
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(this.Json);
+            Clipboard.SetContent(dataPackage);
+
+        }
     }
 }

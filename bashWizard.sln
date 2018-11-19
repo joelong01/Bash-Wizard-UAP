@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28010.2041
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bashWizard", "starterBash\bashWizard.csproj", "{1E4EA646-51F2-4215-9468-0E16BF4F7EB9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bashGeneratorSharedModels", "bashGeneratorSharedModels\bashGeneratorSharedModels.csproj", "{55458040-B7B9-4411-899A-282263A35D5C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bashWizardLib", "bashGeneratorSharedModels\bashWizardLib.csproj", "{55458040-B7B9-4411-899A-282263A35D5C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bw", "bw\bw.csproj", "{B8ED5FD5-A352-4979-86C5-3E1E543EC714}"
 EndProject

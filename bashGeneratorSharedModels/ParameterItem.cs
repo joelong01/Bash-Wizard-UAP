@@ -128,52 +128,6 @@ namespace bashGeneratorSharedModels
             }
         }
 
-        private string _InputValue = "";
-        public string InputValue
-        {
-            get => _InputValue;
-            set
-            {
-                if (_InputValue != value)
-                {
-                    _InputValue = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-        bool _SetInInputFile = true;
-        public bool SetInInputFile
-        {
-            get
-            {
-                return _SetInInputFile;
-            }
-            set
-            {
-                if (_SetInInputFile != value)
-                {
-                    _SetInInputFile = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-        bool _PassthroughParam = true;
-        public bool PassthroughParam
-        {
-            get
-            {
-                return _PassthroughParam;
-            }
-            set
-            {
-                if (_PassthroughParam != value)
-                {
-                    _PassthroughParam = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
 
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {

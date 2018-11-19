@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace bw
+namespace BashWizardConsole
 {
     public class Parameter
     {

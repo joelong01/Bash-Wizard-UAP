@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\bashTemplate.sh" />
+    <None Remove="Resources\beginTee.sh" />
+    <None Remove="Resources\logTemplate.sh" />
+    <None Remove="Resources\parseInputTemplate.sh" />
+    <None Remove="Resources\requiredVariablesTemplate.sh" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\beginTee.sh" />
+    <EmbeddedResource Include="Resources\requiredVariablesTemplate.sh" />
+    <EmbeddedResource Include="Resources\logTemplate.sh" />
+    <EmbeddedResource Include="Resources\parseInputTemplate.sh" />
+    <EmbeddedResource Include="Resources\bashTemplate.sh" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+
+</Project>

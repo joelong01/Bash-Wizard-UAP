@@ -2,7 +2,7 @@
   "profiles": {
     "bw": {
       "commandName": "Project",
-      "commandLineArgs": "-c -f \"D:\\Engagments\\Azure Bootstrap\\params\\createResourceGroup.sh.param\""
+      "commandLineArgs": "-g"
     }
   }
 }
