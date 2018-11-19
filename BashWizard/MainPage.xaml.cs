@@ -174,9 +174,9 @@ namespace bashWizard
                 logParameter = new ParameterItem()
                 {
                     LongParam = "log-directory",
-                    ShortParam = "g",
+                    ShortParam = "l",
                     Description = "directory for the log file.  the log file name will be based on the script name",
-                    VarName = "logFileDir",
+                    VarName = "logDirectory",
                     Default = "\"./\"",
                     AcceptsValue = true,
                     Required = false,
@@ -246,6 +246,30 @@ namespace bashWizard
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == "LongParam")
+            {
+                ParameterItem item = sender as ParameterItem;
+                ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+                for (int i = 0; i < item.LongParam.Length; i++)
+                {
+                    item.ShortParam = item.LongParam.Substring(i, 1);
+                    if (model.ValidateParameters() == "")
+                    {
+                        break;
+                    }
+                }
+                if (model.ValidateParameters() != "")
+                {
+                    BashScript = "pick a short name that works...";
+                }
+                string[] tokens = item.LongParam.Split(new char[] { '-' });
+
+                item.VarName = tokens[0].ToLower();
+                for (int i = 1; i < tokens.Length; i++)
+                {
+                    item.VarName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                }
+            }
             UpdateTextInfo(true);
         }
 
@@ -612,6 +636,13 @@ namespace bashWizard
             var dataPackage = new DataPackage();
             dataPackage.SetText(this.Json);
             Clipboard.SetContent(dataPackage);
+
+        }
+
+        private void LongName_TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox_LostFocus(sender, e);
+
 
         }
     }

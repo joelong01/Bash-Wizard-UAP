@@ -85,7 +85,7 @@ namespace bashGeneratorSharedModels
 
         }
 
-        private string ValidateParameters()
+        public string ValidateParameters()
         {
             //verify short names are unique
             HashSet<string> shortNames = new HashSet<string>();
