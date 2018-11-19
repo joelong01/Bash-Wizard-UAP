@@ -76,7 +76,7 @@ namespace bashWizard
             //  see if we already have the parameter
             foreach (var param in Parameters)
             {
-                if (param.ShortParam == "i" && param.LongParam == "input-file")
+                if (param.ShortParameter == "i" && param.LongParameter == "input-file")
                 {
                     acceptsInputParam = param;
                     break;
@@ -88,14 +88,14 @@ namespace bashWizard
                 {
                     acceptsInputParam = new ParameterItem()
                     {
-                        ShortParam = "i",
-                        LongParam = "input-file",
-                        VarName = "inputFile",
+                        ShortParameter = "i",
+                        LongParameter = "input-file",
+                        VariableName = "inputFile",
                         Description = "filename that contains the JSON values to drive the script.  command line overrides file",
-                        AcceptsValue = true,
-                        Default = $"{ScriptName}.input.json",
-                        Required = false,
-                        SetVal = "$2"
+                        RequiresInputString = true,
+                        Default = "", // this needs to be empty because if it is set, the script will try to find the file...
+                        RequiredParameter = false,
+                        ValueIfSet = "$2"
                     };
 
                     Parameters.Insert(0, acceptsInputParam);
@@ -155,11 +155,15 @@ namespace bashWizard
         private void SetCreateLogDir(bool value)
         {
 
+            if (_opening)
+            {
+                return;
+            }
 
             ParameterItem logParameter = null;
             foreach (var param in Parameters)
             {
-                if (param.VarName == "logFileDir")
+                if (param.VariableName == "logDirectory")
                 {
                     logParameter = param;
                     break;
@@ -173,14 +177,14 @@ namespace bashWizard
 
                 logParameter = new ParameterItem()
                 {
-                    LongParam = "log-directory",
-                    ShortParam = "l",
+                    LongParameter = "log-directory",
+                    ShortParameter = "l",
                     Description = "directory for the log file.  the log file name will be based on the script name",
-                    VarName = "logDirectory",
+                    VariableName = "logDirectory",
                     Default = "\"./\"",
-                    AcceptsValue = true,
-                    Required = false,
-                    SetVal = "$2"
+                    RequiresInputString = true,
+                    RequiredParameter = false,
+                    ValueIfSet = "$2"
                 };
 
                 Parameters.Add(logParameter);
@@ -246,28 +250,34 @@ namespace bashWizard
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "LongParam")
+            if (e.PropertyName == "LongParameter")
             {
                 ParameterItem item = sender as ParameterItem;
                 ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
-                for (int i = 0; i < item.LongParam.Length; i++)
+                if (item.ShortParameter == "") // dont' pick one if the user already did...
                 {
-                    item.ShortParam = item.LongParam.Substring(i, 1);
-                    if (model.ValidateParameters() == "")
+                    for (int i = 0; i < item.LongParameter.Length; i++)
                     {
-                        break;
+                        item.ShortParameter = item.LongParameter.Substring(i, 1);
+                        if (model.ValidateParameters() == "")
+                        {
+                            break;
+                        }
+                    }
+                    if (model.ValidateParameters() != "")
+                    {
+                        BashScript = "pick a short name that works...";
                     }
                 }
-                if (model.ValidateParameters() != "")
+                if (item.VariableName == "")
                 {
-                    BashScript = "pick a short name that works...";
-                }
-                string[] tokens = item.LongParam.Split(new char[] { '-' });
+                    string[] tokens = item.LongParameter.Split(new char[] { '-' });
 
-                item.VarName = tokens[0].ToLower();
-                for (int i = 1; i < tokens.Length; i++)
-                {
-                    item.VarName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                    item.VariableName = tokens[0].ToLower();
+                    for (int i = 1; i < tokens.Length; i++)
+                    {
+                        item.VariableName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                    }
                 }
             }
             UpdateTextInfo(true);
@@ -376,13 +386,13 @@ namespace bashWizard
 
             ParameterItem param = new ParameterItem
             {
-                ShortParam = "r",
+                ShortParameter = "r",
                 Description = "Azure Resource Group",
-                VarName = "resourceGroup",
+                VariableName = "resourceGroup",
                 Default = "",
-                AcceptsValue = true,
-                LongParam = "rource-group",
-                Required = true
+                RequiresInputString = true,
+                LongParameter = "rource-group",
+                RequiredParameter = true
 
             };
 
@@ -394,13 +404,13 @@ namespace bashWizard
 
             param = new ParameterItem
             {
-                ShortParam = "l",
+                ShortParameter = "l",
                 Description = "the location of the VMs",
-                LongParam = "location",
-                VarName = "location",
+                LongParameter = "location",
+                VariableName = "location",
                 Default = "westus2",
-                AcceptsValue = true,
-                Required = true
+                RequiresInputString = true,
+                RequiredParameter = true
 
             };
 
@@ -410,14 +420,14 @@ namespace bashWizard
 
             param = new ParameterItem
             {
-                ShortParam = "d",
+                ShortParameter = "d",
                 Description = "delete the resource group if it already exists",
-                LongParam = "delete",
-                VarName = "delete",
+                LongParameter = "delete",
+                VariableName = "delete",
                 Default = "false",
-                AcceptsValue = false,
-                Required = false,
-                SetVal = "true"
+                RequiresInputString = false,
+                RequiredParameter = false,
+                ValueIfSet = "true"
             };
 
             param.PropertyChanged += ParameterPropertyChanged;
@@ -444,7 +454,8 @@ namespace bashWizard
 
             };
 
-            picker.FileTypeFilter.Add(".param");
+            picker.FileTypeFilter.Add(".bw");
+            
             _fileBashScript = await picker.PickSingleFileAsync();
             if (_fileBashScript != null)
             {
@@ -556,8 +567,8 @@ namespace bashWizard
                 SuggestedStartLocation =
                 Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
             };
-            savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
-            savePicker.SuggestedFileName = $"{ScriptName}.param";
+            savePicker.FileTypeChoices.Add("Bash Wizard Files", new List<string>() { ".bw" });
+            savePicker.SuggestedFileName = $"{ScriptName}.bw";
             _fileBashScript = await savePicker.PickSaveFileAsync();
 
 

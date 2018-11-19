@@ -17,7 +17,7 @@ __USAGE__
 }
 
 echoInput() {     
-__ECHO__
+	echo __ECHO__
 }
 
 
@@ -59,11 +59,13 @@ __INPUT_CASE__
 # input variables 
 __INPUT_DECLARATION__
 
+# now parse input to see if any of the parameters have been overridden
+parseInput "$@"
+
 __PARSE_INPUT_FILE
 
 
-# now parse input to see if any of the parameters have been overridden
-parseInput "$@"
+
 
 __REQUIRED_PARAMETERS__
 

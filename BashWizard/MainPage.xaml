@@ -49,7 +49,7 @@
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Long Name:"  Style="{StaticResource KvpTextBlock}"  Grid.Row="0" Grid.Column="0"/>
-                        <TextBox Text="{x:Bind LongParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="LongName_TextBox_LostFocus" Grid.Column="1" />
+                        <TextBox Text="{x:Bind LongParameter, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="LongName_TextBox_LostFocus" Grid.Column="1" />
                     </Grid>
                     <Grid Grid.Row="0" Grid.Column="1">
                         <Grid.ColumnDefinitions>
@@ -57,7 +57,7 @@
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Short Name:" Style="{StaticResource KvpTextBlock}" Grid.Row="0" Grid.Column="0" />
-                        <TextBox x:Name="TextBox_ShortParameter" Text="{x:Bind ShortParam, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" Grid.Row="0" Grid.Column="1" />
+                        <TextBox x:Name="TextBox_ShortParameter" Text="{x:Bind ShortParameter, Mode=TwoWay}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" Grid.Row="0" Grid.Column="1" />
                     </Grid>
                    
                     <Grid  Grid.Row="0" Grid.Column="2">
@@ -66,7 +66,7 @@
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Variable Name: " HorizontalAlignment="Right" Grid.Column="0" Style="{StaticResource KvpTextBlock}"/>
-                        <TextBox Text="{x:Bind VarName, Mode=TwoWay}"  Grid.Column="1"  Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus"/>
+                        <TextBox Text="{x:Bind VariableName, Mode=TwoWay}"  Grid.Column="1"  Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus"/>
                     </Grid>
 
 
@@ -93,7 +93,7 @@
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Value if Set:" Grid.Column="0" Style="{StaticResource KvpTextBlock}"/>
-                        <TextBox Text="{x:Bind SetVal, Mode=TwoWay, FallbackValue=$2}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus"  Grid.Column="1" />
+                        <TextBox Text="{x:Bind ValueIfSet, Mode=TwoWay, FallbackValue=$2}" Style="{StaticResource KvpTextBox}"  GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus"  Grid.Column="1" />
                     </Grid>
 
 
@@ -102,7 +102,7 @@
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
-                        <CheckBox IsChecked="{x:Bind AcceptsValue, Mode=TwoWay}"  Grid.Column="1" />
+                        <CheckBox IsChecked="{x:Bind RequiresInputString, Mode=TwoWay}"  Grid.Column="1" />
                         <TextBlock Text="Requires Input string:" Style="{StaticResource KvpTextBlock}" Grid.Row="1"/>
 
                     </Grid>
@@ -112,7 +112,7 @@
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Required Parameter:" Style="{StaticResource KvpTextBlock}"  />
-                        <CheckBox IsChecked="{x:Bind Required, Mode=TwoWay}"  Grid.Column="1" Grid.ColumnSpan="1"/>
+                        <CheckBox IsChecked="{x:Bind RequiredParameter, Mode=TwoWay}"  Grid.Column="1" Grid.ColumnSpan="1"/>
                     </Grid>
 
                 </Grid>

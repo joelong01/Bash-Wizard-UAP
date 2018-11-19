@@ -60,7 +60,7 @@ namespace bashGeneratorSharedModels
 
             string nl = "\n";
             string indentOne = "  ";
-            string indentTwo = "      ";
+            
             StringBuilder sb = new StringBuilder($"{{{nl}");
 
             string paramKeyValuePairs = "";
@@ -71,14 +71,14 @@ namespace bashGeneratorSharedModels
                 string defValue = param.Default;
                 defValue = defValue.TrimStart(quotes);
                 defValue = defValue.TrimEnd(quotes);
-                paramKeyValuePairs += $"{indentTwo}\"{param.VarName}\": \"{defValue}\",{nl}";
+                paramKeyValuePairs += $"{indentOne}\"{param.VariableName}\": \"{defValue}\",{nl}";
 
             }
             //  delete trailing "," "\n" and spaces
             paramKeyValuePairs = paramKeyValuePairs.TrimEnd(commadNewLine);
             sb.Append(paramKeyValuePairs);
 
-            sb.Append($"{nl}{indentOne}}}");
+            sb.Append($"{nl}}}");
 
 
             return sb.ToString();
@@ -92,18 +92,18 @@ namespace bashGeneratorSharedModels
             HashSet<string> longNames = new HashSet<string>();
             foreach (var param in Parameters)
             {
-                if (param.ShortParam == "" && param.LongParam == "")
+                if (param.ShortParameter == "" && param.LongParameter == "")
                 {
                     continue; // probably just getting started
                 }
 
-                if (!shortNames.Add(param.ShortParam))
+                if (!shortNames.Add(param.ShortParameter))
                 {
-                    return $"{param.ShortParam} exists at least twice.  please fix it.";
+                    return $"{param.ShortParameter} exists at least twice.  please fix it.";
                 }
-                if (!longNames.Add(param.LongParam))
+                if (!longNames.Add(param.LongParameter))
                 {
-                    return $"{param.LongParam} exists at least twice.  please fix it.";
+                    return $"{param.LongParameter} exists at least twice.  please fix it.";
                 }
             }
 
@@ -149,7 +149,7 @@ namespace bashGeneratorSharedModels
             StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));
             StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"Usage: $0 ");
             StringBuilder usageInfo = new StringBuilder($"{Tabs(1)}echo \"\"\n");
-            StringBuilder echoInput = new StringBuilder($"{Tabs(1)}\"{ScriptName}:\"{nl}");
+            StringBuilder echoInput = new StringBuilder($"\"{ScriptName}:\"{nl}");
             StringBuilder shortOptions = new StringBuilder("");
             StringBuilder longOptions = new StringBuilder("");
             StringBuilder inputCase = new StringBuilder("");
@@ -165,40 +165,40 @@ namespace bashGeneratorSharedModels
             {
                 //
                 //  first usage line
-                string required = (param.Required) ? "Required" : "Optional";
-                usageLine.Append($"-{param.ShortParam} | --{param.LongParam} ");
-                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParam} | --{param.LongParam,-30} {required,-15} {param.Description}\"{nl}");
+                string required = (param.RequiredParameter) ? "Required" : "Optional";
+                usageLine.Append($"-{param.ShortParameter} | --{param.LongParameter} ");
+                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParameter} | --{param.LongParameter,-30} {required,-15} {param.Description}\"{nl}");
 
                 //
                 // the  echoInput function
-                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.VarName,-30} ${param.VarName}\"{nl}");
+                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.VariableName,-30} ${param.VariableName}\"{nl}");
 
                 //
                 //  OPTIONS, LONGOPTS
-                string colon = (param.AcceptsValue) ? ":" : "";
-                shortOptions.Append($"{param.ShortParam}{colon}");
-                longOptions.Append($"{param.LongParam}{colon},");
+                string colon = (param.RequiresInputString) ? ":" : "";
+                shortOptions.Append($"{param.ShortParameter}{colon}");
+                longOptions.Append($"{param.LongParameter}{colon},");
 
                 // input Case
-                inputCase.Append($"{Tabs(3)}-{param.ShortParam}|--{param.LongParam})\n");
-                inputCase.Append($"{Tabs(4)}{param.VarName}={param.SetVal}\n");
-                inputCase.Append((param.AcceptsValue) ? $"{Tabs(4)}shift 2\n" : $"{Tabs(4)}shift 1\n");
+                inputCase.Append($"{Tabs(3)}-{param.ShortParameter}|--{param.LongParameter})\n");
+                inputCase.Append($"{Tabs(4)}{param.VariableName}={param.ValueIfSet}\n");
+                inputCase.Append((param.RequiresInputString) ? $"{Tabs(4)}shift 2\n" : $"{Tabs(4)}shift 1\n");
                 inputCase.Append($"{Tabs(3)};;\n");
 
                 // declare variables
-                inputDeclarations.Append($"declare {param.VarName}={param.Default}\n");
-                if (this.AcceptInputFile && param.VarName != "inputFile")
+                inputDeclarations.Append($"declare {param.VariableName}={param.Default}\n");
+                if (this.AcceptInputFile && param.VariableName != "inputFile")
                 {
 
                     // parse input file
-                    parseInputFile.Append($"{Tabs(1)} {param.VarName}=$(echo \"${{inputConfig}}\" | jq \'.[\"{param.VarName}\"]\')\n");
+                    parseInputFile.Append($"{Tabs(1)} {param.VariableName}=$(echo \"${{inputConfig}}\" | jq \'.[\"{param.VariableName}\"]\')\n");
                 }
 
                 // if statement for the required files
 
-                if (param.Required)
+                if (param.RequiredParameter)
                 {
-                    requiredFilesIf.Append($" -z \"${{{param.VarName}}}\" ||");
+                    requiredFilesIf.Append($" [ -z \"${{{param.VariableName}}}\" ] ||");
                 }
 
                 
