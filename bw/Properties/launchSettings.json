@@ -2,7 +2,7 @@
   "profiles": {
     "bw": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"d:\\Engagments\\AzureBootstrap\\params\\loopTest.param\""
+      "commandLineArgs": "-d ..\\bashWizardFiles\\createResourceGroup.sh.bw -r ./BashScripts/"
     }
   }
 }

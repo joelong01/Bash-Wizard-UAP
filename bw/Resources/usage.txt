@@ -5,7 +5,11 @@
     -f | --input-file               (no)        <config_file.bw>   takes a Bash Wizard file and outputs to stdout a Bash script
     -c | --create-sample-json       (no)        (none)             echos a simple Bash Wizard file to stdout so you can edit it 
     -i | --create-input-json        (no)        (none)             requires -f to be set.  takes the input from -f and echos to
-                                                                   stdout a JSON file that has the input vars set to default
+                                                                   stdout a JSON file that has the input vars set to default    
+    -d | --vs-code-debug-info       (no)        <config_file.bw>   takes a Bash Wizard file and outputs to stdout a config section
+																   for VS Codes Bash Debug extension
+    -r | --script-directory         (no)        <directory>        the directory that contains the script when using -d
+    -h | --help                     (no)		(none)             echos this information
     
     Examples:
     1. take config_file.JSON and output a bash scripts

@@ -47,21 +47,15 @@ namespace bashGeneratorSharedModels
         {
 
             //       we want something like
-            //  {
-            //      "create": "true",
-            //      "log-directory": "./",
-            //      "resource-group": "",
-            //      "location": "westus2",
-            //      "delete": "false",
-            //      "confirm-on-delete": "false"
-            //    }
-            //      
+            //   "__SCRIPT__NAME__ : {
+            //      "longParameter": "Default"
+            //  }
 
 
             string nl = "\n";
-            string indentOne = "  ";
-            
-            StringBuilder sb = new StringBuilder($"{{{nl}");
+
+
+            StringBuilder sb = new StringBuilder($"{Tabs(1)}\"{ScriptName}\": {{{nl}");
 
             string paramKeyValuePairs = "";
             char[] quotes = { '"' };
@@ -71,14 +65,15 @@ namespace bashGeneratorSharedModels
                 string defValue = param.Default;
                 defValue = defValue.TrimStart(quotes);
                 defValue = defValue.TrimEnd(quotes);
-                paramKeyValuePairs += $"{indentOne}\"{param.VariableName}\": \"{defValue}\",{nl}";
+                defValue = defValue.Replace("\\", "\\\\");
+                paramKeyValuePairs += $"{Tabs(2)}\"{param.LongParameter}\": \"{defValue}\",{nl}";
 
             }
             //  delete trailing "," "\n" and spaces
             paramKeyValuePairs = paramKeyValuePairs.TrimEnd(commadNewLine);
             sb.Append(paramKeyValuePairs);
 
-            sb.Append($"{nl}}}");
+            sb.Append($"{nl}{Tabs(1)}}}");
 
 
             return sb.ToString();
@@ -135,6 +130,7 @@ namespace bashGeneratorSharedModels
         /// <returns></returns>
         public string ToBash()
         {
+
             string validateString = ValidateParameters();
             if (validateString != "")
             {
@@ -171,7 +167,7 @@ namespace bashGeneratorSharedModels
 
                 //
                 // the  echoInput function
-                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.VariableName,-30} ${param.VariableName}\"{nl}");
+                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.LongParameter,-30} ${param.VariableName}\"{nl}");
 
                 //
                 //  OPTIONS, LONGOPTS
@@ -191,7 +187,8 @@ namespace bashGeneratorSharedModels
                 {
 
                     // parse input file
-                    parseInputFile.Append($"{Tabs(1)} {param.VariableName}=$(echo \"${{inputConfig}}\" | jq \'.[\"{param.VariableName}\"]\')\n");
+                    parseInputFile.Append($"{Tabs(1)}{param.VariableName}=$(echo \"${{configSection}}\" | jq \'.[\"{param.LongParameter}\"]\' --raw-output)\n");
+
                 }
 
                 // if statement for the required files
@@ -201,7 +198,7 @@ namespace bashGeneratorSharedModels
                     requiredFilesIf.Append($" [ -z \"${{{param.VariableName}}}\" ] ||");
                 }
 
-                
+
             }
 
 
@@ -244,6 +241,7 @@ namespace bashGeneratorSharedModels
 
             if (parseInputFile.Length > 0)
             {
+                parseInputTemplate.Replace("__SCRIPT_NAME__", this.ScriptName);
                 parseInputTemplate.Replace("__FILE_TO_SETTINGS__", parseInputFile.ToString());
                 sbBashScript.Replace("__PARSE_INPUT_FILE", parseInputTemplate.ToString());
             }
@@ -263,6 +261,43 @@ namespace bashGeneratorSharedModels
 
         }
 
+
+        public string VSCodeDebugInfo(string scriptDirectory)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                string scriptDir = scriptDirectory;
+                string scriptName = this.ScriptName;
+                char[] slashes = new char[] { '/', '\\' };
+                scriptDir = scriptDir.TrimEnd(slashes);
+                scriptName = scriptName = scriptName.TrimStart(slashes);
+                string nl = "\n";
+                sb.Append($"{{{nl}");
+                sb.Append($"{Tabs(1)}\"type:\": \"bashdb\",{nl}");
+                sb.Append($"{Tabs(1)}\"request:\": \"launch\",{nl}");
+                sb.Append($"{Tabs(1)}\"name:\": \"Debug {this.ScriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"cwd:\": \"${{workspaceFolder}}\",{nl}");
+
+                sb.Append($"{Tabs(1)}\"program:\": \"{scriptDir}/{scriptName}{nl}");
+                sb.Append($"{Tabs(1)}\"args:\": [{nl}");
+                foreach (var param in Parameters)
+                {
+                    sb.Append($"{Tabs(2)}\"--{param.LongParameter}\",{nl}{Tabs(2)}\"{param.Default}\",{nl}");
+                }
+
+
+                sb.Append($"{Tabs(1)}]{nl}");
+                sb.Append($"}}");
+            }
+            catch(Exception e)
+            {
+                return $"Exception generating config\n\nException Info:\n===============\n{e.Message}";
+            }
+
+            return sb.ToString();
+        }
     }
 
     public static class EmbeddedResource

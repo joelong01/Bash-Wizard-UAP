@@ -18,7 +18,7 @@ using Windows.UI.Xaml.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-namespace bashWizard
+namespace BashWizard
 {
 
 
@@ -43,13 +43,36 @@ namespace bashWizard
         }
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
-        public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty InputSectionProperty = DependencyProperty.Register("InputSection", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
         public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
         public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, TeeToLogFileChanged));
         public static readonly DependencyProperty AcceptsInputFileProperty = DependencyProperty.Register("AcceptsInputFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, AcceptsInputFileChanged));
-        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata("", ScriptNameChanged));
+
+        public string ScriptName
+        {
+            get => (string)GetValue(ScriptNameProperty);
+            set => SetValue(ScriptNameProperty, value);
+        }
+        private static void ScriptNameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (string)e.NewValue;
+            depPropClass?.SetScriptName(depPropValue);
+        }
+        private void SetScriptName(string value)
+        {
+            UpdateTextInfo(true);
+        }
+
+        public string InputSection
+        {
+            get => (string)GetValue(InputSectionProperty);
+            set => SetValue(InputSectionProperty, value);
+        }
         public string EndScript
         {
             get => (string)GetValue(EndScriptProperty);
@@ -222,11 +245,7 @@ namespace bashWizard
         }
 
 
-        public string ScriptName
-        {
-            get => (string)GetValue(ScriptNameProperty);
-            set => SetValue(ScriptNameProperty, value);
-        }
+
         public string BashScript
         {
             get => (string)GetValue(BashScriptProperty);
@@ -258,7 +277,12 @@ namespace bashWizard
                 {
                     for (int i = 0; i < item.LongParameter.Length; i++)
                     {
+
                         item.ShortParameter = item.LongParameter.Substring(i, 1);
+                        if (item.ShortParameter == "")
+                        {
+                            continue;
+                        }
                         if (model.ValidateParameters() == "")
                         {
                             break;
@@ -311,6 +335,7 @@ namespace bashWizard
                 return;
             }
 
+
             BashScript = GenerateBash();
             if (setJsonText)
             {
@@ -318,6 +343,9 @@ namespace bashWizard
             }
 
             splitView.IsPaneOpen = false;
+
+            InputSection = GenerateInputBash();
+
             AsyncSave();
         }
 
@@ -372,7 +400,16 @@ namespace bashWizard
 
         private string GenerateInputBash()
         {
-            return "hnmnmm";
+            var list = new List<ParameterItem>(Parameters);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            try
+            {
+                return model.SerializeInputJson();
+            }
+            catch (Exception e)
+            {
+                return $"Exception caught creating bash script:\n\n{e.Message}";
+            }
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -455,7 +492,7 @@ namespace bashWizard
             };
 
             picker.FileTypeFilter.Add(".bw");
-            
+
             _fileBashScript = await picker.PickSingleFileAsync();
             if (_fileBashScript != null)
             {
@@ -498,7 +535,15 @@ namespace bashWizard
 
                     foreach (var param in result.Parameters)
                     {
-                        Parameters.Add(param);
+                        if (param.RequiredParameter)
+                        {
+                            Parameters.Insert(0, param);
+                        }
+                        else
+                        {
+                            Parameters.Add(param);
+                        }
+
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
                     this.ScriptName = result.ScriptName;
@@ -655,6 +700,18 @@ namespace bashWizard
             TextBox_LostFocus(sender, e);
 
 
+        }
+
+        private async void OnGetDebugConfig(object sender, RoutedEventArgs e)
+        {
+            ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+
+            var dbgWindow = new DebugConfig()
+            {
+                ConfigModel = model
+            };
+
+            await dbgWindow.ShowAsync(ContentDialogPlacement.Popup);
         }
     }
 }
