@@ -32,7 +32,22 @@ namespace bashGeneratorSharedModels
 
         public string Serialize()
         {
+            StripLeadingAndTrailingSpaces();
             return JsonConvert.SerializeObject(this, Formatting.Indented);
+            
+        }
+
+        public void StripLeadingAndTrailingSpaces()
+        {
+            foreach (var parameter in Parameters)
+            {
+                parameter.Default = parameter.Default.Trim();
+                parameter.Description = parameter.Description.Trim();
+                parameter.LongParameter = parameter.LongParameter.Trim();
+                parameter.ShortParameter = parameter.ShortParameter.Trim();
+                parameter.ValueIfSet = parameter.ValueIfSet.Trim();
+                parameter.VariableName = parameter.VariableName.Trim();                
+            }
         }
 
         public static ConfigModel Deserialize(string json)
@@ -100,6 +115,12 @@ namespace bashGeneratorSharedModels
                 {
                     return $"{param.LongParameter} exists at least twice.  please fix it.";
                 }
+
+                if (!param.RequiresInputString && param.ValueIfSet.Trim(new char[] { ' ' }) == "$2")
+                {
+                    return $"Parameter {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed.";
+                }
+                
             }
 
             if (TeeToLogFile && !CreateLogFile)
@@ -271,20 +292,21 @@ namespace bashGeneratorSharedModels
                 string scriptDir = scriptDirectory;
                 string scriptName = this.ScriptName;
                 char[] slashes = new char[] { '/', '\\' };
-                scriptDir = scriptDir.TrimEnd(slashes);
+                char[] quotes = new char[] { '\"', '\'' };
+                scriptDir = scriptDir.TrimEnd(slashes).TrimStart(new char[] { '.', '/' }).TrimEnd(slashes);
                 scriptName = scriptName = scriptName.TrimStart(slashes);
                 string nl = "\n";
                 sb.Append($"{{{nl}");
-                sb.Append($"{Tabs(1)}\"type:\": \"bashdb\",{nl}");
-                sb.Append($"{Tabs(1)}\"request:\": \"launch\",{nl}");
-                sb.Append($"{Tabs(1)}\"name:\": \"Debug {this.ScriptName}\",{nl}");
-                sb.Append($"{Tabs(1)}\"cwd:\": \"${{workspaceFolder}}\",{nl}");
+                sb.Append($"{Tabs(1)}\"type\": \"bashdb\",{nl}");
+                sb.Append($"{Tabs(1)}\"request\": \"launch\",{nl}");
+                sb.Append($"{Tabs(1)}\"name\": \"Debug {this.ScriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"cwd\": \"${{workspaceFolder}}\",{nl}");
 
-                sb.Append($"{Tabs(1)}\"program:\": \"{scriptDir}/{scriptName}{nl}");
-                sb.Append($"{Tabs(1)}\"args:\": [{nl}");
+                sb.Append($"{Tabs(1)}\"program\": \"{{$workspaceFolder}}/{scriptDir}/{scriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"args\": [{nl}");
                 foreach (var param in Parameters)
                 {
-                    sb.Append($"{Tabs(2)}\"--{param.LongParameter}\",{nl}{Tabs(2)}\"{param.Default}\",{nl}");
+                    sb.Append($"{Tabs(2)}\"--{param.LongParameter}\",{nl}{Tabs(2)}\"{param.Default.TrimStart(quotes).TrimEnd(quotes)}\",{nl}");
                 }
 
 
