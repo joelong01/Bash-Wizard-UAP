@@ -302,7 +302,7 @@ namespace bashGeneratorSharedModels
                 sb.Append($"{Tabs(1)}\"name\": \"Debug {this.ScriptName}\",{nl}");
                 sb.Append($"{Tabs(1)}\"cwd\": \"${{workspaceFolder}}\",{nl}");
 
-                sb.Append($"{Tabs(1)}\"program\": \"{{$workspaceFolder}}/{scriptDir}/{scriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"program\": \"${{workspaceFolder}}/{scriptDir}/{scriptName}\",{nl}");
                 sb.Append($"{Tabs(1)}\"args\": [{nl}");
                 foreach (var param in Parameters)
                 {
