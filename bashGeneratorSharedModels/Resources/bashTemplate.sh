@@ -7,20 +7,24 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo "I’m sorry, 'getopt --test' failed in this environment."
     exit 1
 fi
-
-usage() {
-    
+usage() {   
 __USAGE_LINE__ 1>&2
 __USAGE__  
     echo ""
     exit 1
 }
-
 echoInput() {     
-__ECHO__
+	echo __ECHO__
 }
-
-
+# 
+# pull a value out of the config file
+# $1 is the name of the variable that has the JSON
+# $2 is the section name
+# $3 is the key name
+# assumes that $jsonConfig has been created
+function getValue() {
+    echo "$1" | jq -r '{"'$2'"} | .[]."'$3'"'
+}
 function parseInput() {
     
     local OPTIONS=__SHORT_OPTIONS__
@@ -55,23 +59,13 @@ __INPUT_CASE__
         esac
     done
 }
-
 # input variables 
 __INPUT_DECLARATION__
-
-__PARSE_INPUT_FILE
-
-
 # now parse input to see if any of the parameters have been overridden
 parseInput "$@"
-
+__PARSE_INPUT_FILE
 __REQUIRED_PARAMETERS__
-
 __LOGGING_SUPPORT_
-
 __BEGIN_TEE__
-
 __ECHO_INPUT__
-
-
 # --- END OF BASH WIZARD GENERATED CODE ---

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "bashWizardLib": {
+      "commandName": "Project",
+      "commandLineArgs": "-i \"d:\\Engagments\\AzureBootstrap\\params\\loopTest.param\""
+    }
+  }
+}

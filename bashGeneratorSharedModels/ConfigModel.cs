@@ -32,7 +32,22 @@ namespace bashGeneratorSharedModels
 
         public string Serialize()
         {
+            StripLeadingAndTrailingSpaces();
             return JsonConvert.SerializeObject(this, Formatting.Indented);
+            
+        }
+
+        public void StripLeadingAndTrailingSpaces()
+        {
+            foreach (var parameter in Parameters)
+            {
+                parameter.Default = parameter.Default.Trim();
+                parameter.Description = parameter.Description.Trim();
+                parameter.LongParameter = parameter.LongParameter.Trim();
+                parameter.ShortParameter = parameter.ShortParameter.Trim();
+                parameter.ValueIfSet = parameter.ValueIfSet.Trim();
+                parameter.VariableName = parameter.VariableName.Trim();                
+            }
         }
 
         public static ConfigModel Deserialize(string json)
@@ -47,21 +62,15 @@ namespace bashGeneratorSharedModels
         {
 
             //       we want something like
-            //  {
-            //      "create": "true",
-            //      "log-directory": "./",
-            //      "resource-group": "",
-            //      "location": "westus2",
-            //      "delete": "false",
-            //      "confirm-on-delete": "false"
-            //    }
-            //      
+            //   "__SCRIPT__NAME__ : {
+            //      "longParameter": "Default"
+            //  }
 
 
             string nl = "\n";
-            string indentOne = "  ";
-            string indentTwo = "      ";
-            StringBuilder sb = new StringBuilder($"{{{nl}");
+
+
+            StringBuilder sb = new StringBuilder($"{Tabs(1)}\"{ScriptName}\": {{{nl}");
 
             string paramKeyValuePairs = "";
             char[] quotes = { '"' };
@@ -71,40 +80,47 @@ namespace bashGeneratorSharedModels
                 string defValue = param.Default;
                 defValue = defValue.TrimStart(quotes);
                 defValue = defValue.TrimEnd(quotes);
-                paramKeyValuePairs += $"{indentTwo}\"{param.VarName}\": \"{defValue}\",{nl}";
+                defValue = defValue.Replace("\\", "\\\\");
+                paramKeyValuePairs += $"{Tabs(2)}\"{param.LongParameter}\": \"{defValue}\",{nl}";
 
             }
             //  delete trailing "," "\n" and spaces
             paramKeyValuePairs = paramKeyValuePairs.TrimEnd(commadNewLine);
             sb.Append(paramKeyValuePairs);
 
-            sb.Append($"{nl}{indentOne}}}");
+            sb.Append($"{nl}{Tabs(1)}}}");
 
 
             return sb.ToString();
 
         }
 
-        private string ValidateParameters()
+        public string ValidateParameters()
         {
             //verify short names are unique
             HashSet<string> shortNames = new HashSet<string>();
             HashSet<string> longNames = new HashSet<string>();
             foreach (var param in Parameters)
             {
-                if (param.ShortParam == "" && param.LongParam == "")
+                if (param.ShortParameter == "" && param.LongParameter == "")
                 {
                     continue; // probably just getting started
                 }
 
-                if (!shortNames.Add(param.ShortParam))
+                if (!shortNames.Add(param.ShortParameter))
                 {
-                    return $"{param.ShortParam} exists at least twice.  please fix it.";
+                    return $"{param.ShortParameter} exists at least twice.  please fix it.";
                 }
-                if (!longNames.Add(param.LongParam))
+                if (!longNames.Add(param.LongParameter))
                 {
-                    return $"{param.LongParam} exists at least twice.  please fix it.";
+                    return $"{param.LongParameter} exists at least twice.  please fix it.";
                 }
+
+                if (!param.RequiresInputString && param.ValueIfSet.Trim(new char[] { ' ' }) == "$2")
+                {
+                    return $"Parameter {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed.";
+                }
+                
             }
 
             if (TeeToLogFile && !CreateLogFile)
@@ -135,6 +151,7 @@ namespace bashGeneratorSharedModels
         /// <returns></returns>
         public string ToBash()
         {
+
             string validateString = ValidateParameters();
             if (validateString != "")
             {
@@ -149,7 +166,7 @@ namespace bashGeneratorSharedModels
             StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));
             StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"Usage: $0 ");
             StringBuilder usageInfo = new StringBuilder($"{Tabs(1)}echo \"\"\n");
-            StringBuilder echoInput = new StringBuilder($"{Tabs(1)}\"{ScriptName}:\"{nl}");
+            StringBuilder echoInput = new StringBuilder($"\"{ScriptName}:\"{nl}");
             StringBuilder shortOptions = new StringBuilder("");
             StringBuilder longOptions = new StringBuilder("");
             StringBuilder inputCase = new StringBuilder("");
@@ -165,43 +182,44 @@ namespace bashGeneratorSharedModels
             {
                 //
                 //  first usage line
-                string required = (param.Required) ? "Required" : "Optional";
-                usageLine.Append($"-{param.ShortParam} | --{param.LongParam} ");
-                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParam} | --{param.LongParam,-30} {required,-15} {param.Description}\"{nl}");
+                string required = (param.RequiredParameter) ? "Required" : "Optional";
+                usageLine.Append($"-{param.ShortParameter} | --{param.LongParameter} ");
+                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParameter} | --{param.LongParameter,-30} {required,-15} {param.Description}\"{nl}");
 
                 //
                 // the  echoInput function
-                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.VarName,-30} ${param.VarName}\"{nl}");
+                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.LongParameter,-30} ${param.VariableName}\"{nl}");
 
                 //
                 //  OPTIONS, LONGOPTS
-                string colon = (param.AcceptsValue) ? ":" : "";
-                shortOptions.Append($"{param.ShortParam}{colon}");
-                longOptions.Append($"{param.LongParam}{colon},");
+                string colon = (param.RequiresInputString) ? ":" : "";
+                shortOptions.Append($"{param.ShortParameter}{colon}");
+                longOptions.Append($"{param.LongParameter}{colon},");
 
                 // input Case
-                inputCase.Append($"{Tabs(3)}-{param.ShortParam}|--{param.LongParam})\n");
-                inputCase.Append($"{Tabs(4)}{param.VarName}={param.SetVal}\n");
-                inputCase.Append((param.AcceptsValue) ? $"{Tabs(4)}shift 2\n" : $"{Tabs(4)}shift 1\n");
+                inputCase.Append($"{Tabs(3)}-{param.ShortParameter}|--{param.LongParameter})\n");
+                inputCase.Append($"{Tabs(4)}{param.VariableName}={param.ValueIfSet}\n");
+                inputCase.Append((param.RequiresInputString) ? $"{Tabs(4)}shift 2\n" : $"{Tabs(4)}shift 1\n");
                 inputCase.Append($"{Tabs(3)};;\n");
 
                 // declare variables
-                inputDeclarations.Append($"declare {param.VarName}={param.Default}\n");
-                if (this.AcceptInputFile && param.VarName != "inputFile")
+                inputDeclarations.Append($"declare {param.VariableName}={param.Default}\n");
+                if (this.AcceptInputFile && param.VariableName != "inputFile")
                 {
 
                     // parse input file
-                    parseInputFile.Append($"{Tabs(1)} {param.VarName}=$(echo \"${{inputConfig}}\" | jq \'.[\"{param.VarName}\"]\')\n");
+                    parseInputFile.Append($"{Tabs(1)}{param.VariableName}=$(echo \"${{configSection}}\" | jq \'.[\"{param.LongParameter}\"]\' --raw-output)\n");
+
                 }
 
                 // if statement for the required files
 
-                if (param.Required)
+                if (param.RequiredParameter)
                 {
-                    requiredFilesIf.Append($" -z \"${{{param.VarName}}}\" ||");
+                    requiredFilesIf.Append($" [ -z \"${{{param.VariableName}}}\" ] ||");
                 }
 
-                
+
             }
 
 
@@ -244,6 +262,7 @@ namespace bashGeneratorSharedModels
 
             if (parseInputFile.Length > 0)
             {
+                parseInputTemplate.Replace("__SCRIPT_NAME__", this.ScriptName);
                 parseInputTemplate.Replace("__FILE_TO_SETTINGS__", parseInputFile.ToString());
                 sbBashScript.Replace("__PARSE_INPUT_FILE", parseInputTemplate.ToString());
             }
@@ -263,6 +282,44 @@ namespace bashGeneratorSharedModels
 
         }
 
+
+        public string VSCodeDebugInfo(string scriptDirectory)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                string scriptDir = scriptDirectory;
+                string scriptName = this.ScriptName;
+                char[] slashes = new char[] { '/', '\\' };
+                char[] quotes = new char[] { '\"', '\'' };
+                scriptDir = scriptDir.TrimEnd(slashes).TrimStart(new char[] { '.', '/' }).TrimEnd(slashes);
+                scriptName = scriptName = scriptName.TrimStart(slashes);
+                string nl = "\n";
+                sb.Append($"{{{nl}");
+                sb.Append($"{Tabs(1)}\"type\": \"bashdb\",{nl}");
+                sb.Append($"{Tabs(1)}\"request\": \"launch\",{nl}");
+                sb.Append($"{Tabs(1)}\"name\": \"Debug {this.ScriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"cwd\": \"${{workspaceFolder}}\",{nl}");
+
+                sb.Append($"{Tabs(1)}\"program\": \"${{workspaceFolder}}/{scriptDir}/{scriptName}\",{nl}");
+                sb.Append($"{Tabs(1)}\"args\": [{nl}");
+                foreach (var param in Parameters)
+                {
+                    sb.Append($"{Tabs(2)}\"--{param.LongParameter}\",{nl}{Tabs(2)}\"{param.Default.TrimStart(quotes).TrimEnd(quotes)}\",{nl}");
+                }
+
+
+                sb.Append($"{Tabs(1)}]{nl}");
+                sb.Append($"}}");
+            }
+            catch(Exception e)
+            {
+                return $"Exception generating config\n\nException Info:\n===============\n{e.Message}";
+            }
+
+            return sb.ToString();
+        }
     }
 
     public static class EmbeddedResource
