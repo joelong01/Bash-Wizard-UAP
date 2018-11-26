@@ -1,5 +1,5 @@
 ﻿#verify required parameters are set
-if [ __REQUIRED_FILES_IF__ ]; then
+if __REQUIRED_FILES_IF__; then
     echo ""
     echo "Required parameter missing! "
     echoInput #make it easy to see what is missing

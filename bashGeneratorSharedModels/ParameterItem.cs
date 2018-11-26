@@ -9,13 +9,13 @@ namespace bashGeneratorSharedModels
 
         public override string ToString()
         {
-            return $"{LongParam}: {Description}";
+            return $"{LongParameter}: {Description}";
         }
 
 
 
         private string _ShortParam = "";
-        public string ShortParam
+        public string ShortParameter
         {
             get => _ShortParam;
             set
@@ -30,7 +30,7 @@ namespace bashGeneratorSharedModels
         }
 
         private string _LongParam = "";
-        public string LongParam
+        public string LongParameter
         {
             get => _LongParam;
             set
@@ -59,7 +59,7 @@ namespace bashGeneratorSharedModels
         }
 
         private string _VarName = "";
-        public string VarName
+        public string VariableName
         {
             get => _VarName;
             set
@@ -72,15 +72,15 @@ namespace bashGeneratorSharedModels
             }
         }
 
-        private bool _AcceptsValue = true;
-        public bool AcceptsValue
+        private bool _RequiresInputString = true;
+        public bool RequiresInputString
         {
-            get => _AcceptsValue;
+            get => _RequiresInputString;
             set
             {
-                if (_AcceptsValue != value)
+                if (_RequiresInputString != value)
                 {
-                    _AcceptsValue = value;
+                    _RequiresInputString = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -101,7 +101,7 @@ namespace bashGeneratorSharedModels
         }
 
         private bool _Required = true;
-        public bool Required
+        public bool RequiredParameter
         {
             get => _Required;
             set
@@ -115,7 +115,7 @@ namespace bashGeneratorSharedModels
         }
 
         private string _SetVal = "$2";
-        public string SetVal
+        public string ValueIfSet
         {
             get => _SetVal;
             set

@@ -18,7 +18,7 @@ using Windows.UI.Xaml.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-namespace bashWizard
+namespace BashWizard
 {
 
 
@@ -43,13 +43,36 @@ namespace bashWizard
         }
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
-        public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty InputSectionProperty = DependencyProperty.Register("InputSection", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
         public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
         public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, TeeToLogFileChanged));
         public static readonly DependencyProperty AcceptsInputFileProperty = DependencyProperty.Register("AcceptsInputFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, AcceptsInputFileChanged));
-        public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
+        public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata("", ScriptNameChanged));
+
+        public string ScriptName
+        {
+            get => (string)GetValue(ScriptNameProperty);
+            set => SetValue(ScriptNameProperty, value);
+        }
+        private static void ScriptNameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (string)e.NewValue;
+            depPropClass?.SetScriptName(depPropValue);
+        }
+        private void SetScriptName(string value)
+        {
+            UpdateTextInfo(true);
+        }
+
+        public string InputSection
+        {
+            get => (string)GetValue(InputSectionProperty);
+            set => SetValue(InputSectionProperty, value);
+        }
         public string EndScript
         {
             get => (string)GetValue(EndScriptProperty);
@@ -76,7 +99,7 @@ namespace bashWizard
             //  see if we already have the parameter
             foreach (var param in Parameters)
             {
-                if (param.ShortParam == "i" && param.LongParam == "input-file")
+                if (param.ShortParameter == "i" && param.LongParameter == "input-file")
                 {
                     acceptsInputParam = param;
                     break;
@@ -88,14 +111,14 @@ namespace bashWizard
                 {
                     acceptsInputParam = new ParameterItem()
                     {
-                        ShortParam = "i",
-                        LongParam = "input-file",
-                        VarName = "inputFile",
+                        ShortParameter = "i",
+                        LongParameter = "input-file",
+                        VariableName = "inputFile",
                         Description = "filename that contains the JSON values to drive the script.  command line overrides file",
-                        AcceptsValue = true,
-                        Default = $"{ScriptName}.input.json",
-                        Required = false,
-                        SetVal = "$2"
+                        RequiresInputString = true,
+                        Default = "", // this needs to be empty because if it is set, the script will try to find the file...
+                        RequiredParameter = false,
+                        ValueIfSet = "$2"
                     };
 
                     Parameters.Insert(0, acceptsInputParam);
@@ -155,11 +178,15 @@ namespace bashWizard
         private void SetCreateLogDir(bool value)
         {
 
+            if (_opening)
+            {
+                return;
+            }
 
             ParameterItem logParameter = null;
             foreach (var param in Parameters)
             {
-                if (param.VarName == "logFileDir")
+                if (param.VariableName == "logDirectory")
                 {
                     logParameter = param;
                     break;
@@ -173,14 +200,14 @@ namespace bashWizard
 
                 logParameter = new ParameterItem()
                 {
-                    LongParam = "log-directory",
-                    ShortParam = "g",
+                    LongParameter = "log-directory",
+                    ShortParameter = "l",
                     Description = "directory for the log file.  the log file name will be based on the script name",
-                    VarName = "logFileDir",
+                    VariableName = "logDirectory",
                     Default = "\"./\"",
-                    AcceptsValue = true,
-                    Required = false,
-                    SetVal = "$2"
+                    RequiresInputString = true,
+                    RequiredParameter = false,
+                    ValueIfSet = "$2"
                 };
 
                 Parameters.Add(logParameter);
@@ -218,11 +245,7 @@ namespace bashWizard
         }
 
 
-        public string ScriptName
-        {
-            get => (string)GetValue(ScriptNameProperty);
-            set => SetValue(ScriptNameProperty, value);
-        }
+
         public string BashScript
         {
             get => (string)GetValue(BashScriptProperty);
@@ -246,6 +269,41 @@ namespace bashWizard
 
         private void ParameterPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == "LongParameter")
+            {
+                ParameterItem item = sender as ParameterItem;
+                ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+                if (item.ShortParameter == "") // dont' pick one if the user already did...
+                {
+                    for (int i = 0; i < item.LongParameter.Length; i++)
+                    {
+
+                        item.ShortParameter = item.LongParameter.Substring(i, 1);
+                        if (item.ShortParameter == "")
+                        {
+                            continue;
+                        }
+                        if (model.ValidateParameters() == "")
+                        {
+                            break;
+                        }
+                    }
+                    if (model.ValidateParameters() != "")
+                    {
+                        BashScript = "pick a short name that works...";
+                    }
+                }
+                if (item.VariableName == "")
+                {
+                    string[] tokens = item.LongParameter.Split(new char[] { '-' });
+
+                    item.VariableName = tokens[0].ToLower();
+                    for (int i = 1; i < tokens.Length; i++)
+                    {
+                        item.VariableName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                    }
+                }
+            }
             UpdateTextInfo(true);
         }
 
@@ -277,6 +335,7 @@ namespace bashWizard
                 return;
             }
 
+
             BashScript = GenerateBash();
             if (setJsonText)
             {
@@ -284,6 +343,9 @@ namespace bashWizard
             }
 
             splitView.IsPaneOpen = false;
+
+            InputSection = GenerateInputBash();
+
             AsyncSave();
         }
 
@@ -338,7 +400,16 @@ namespace bashWizard
 
         private string GenerateInputBash()
         {
-            return "hnmnmm";
+            var list = new List<ParameterItem>(Parameters);
+            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            try
+            {
+                return model.SerializeInputJson();
+            }
+            catch (Exception e)
+            {
+                return $"Exception caught creating bash script:\n\n{e.Message}";
+            }
         }
 
         private void OnUpdate(object sender, RoutedEventArgs e)
@@ -352,13 +423,13 @@ namespace bashWizard
 
             ParameterItem param = new ParameterItem
             {
-                ShortParam = "r",
+                ShortParameter = "r",
                 Description = "Azure Resource Group",
-                VarName = "resourceGroup",
+                VariableName = "resourceGroup",
                 Default = "",
-                AcceptsValue = true,
-                LongParam = "rource-group",
-                Required = true
+                RequiresInputString = true,
+                LongParameter = "rource-group",
+                RequiredParameter = true
 
             };
 
@@ -370,13 +441,13 @@ namespace bashWizard
 
             param = new ParameterItem
             {
-                ShortParam = "l",
+                ShortParameter = "l",
                 Description = "the location of the VMs",
-                LongParam = "location",
-                VarName = "location",
+                LongParameter = "location",
+                VariableName = "location",
                 Default = "westus2",
-                AcceptsValue = true,
-                Required = true
+                RequiresInputString = true,
+                RequiredParameter = true
 
             };
 
@@ -386,14 +457,14 @@ namespace bashWizard
 
             param = new ParameterItem
             {
-                ShortParam = "d",
+                ShortParameter = "d",
                 Description = "delete the resource group if it already exists",
-                LongParam = "delete",
-                VarName = "delete",
+                LongParameter = "delete",
+                VariableName = "delete",
                 Default = "false",
-                AcceptsValue = false,
-                Required = false,
-                SetVal = "true"
+                RequiresInputString = false,
+                RequiredParameter = false,
+                ValueIfSet = "true"
             };
 
             param.PropertyChanged += ParameterPropertyChanged;
@@ -420,7 +491,8 @@ namespace bashWizard
 
             };
 
-            picker.FileTypeFilter.Add(".param");
+            picker.FileTypeFilter.Add(".bw");
+
             _fileBashScript = await picker.PickSingleFileAsync();
             if (_fileBashScript != null)
             {
@@ -463,7 +535,15 @@ namespace bashWizard
 
                     foreach (var param in result.Parameters)
                     {
-                        Parameters.Add(param);
+                        if (param.RequiredParameter)
+                        {
+                            Parameters.Insert(0, param);
+                        }
+                        else
+                        {
+                            Parameters.Add(param);
+                        }
+
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
                     this.ScriptName = result.ScriptName;
@@ -532,8 +612,8 @@ namespace bashWizard
                 SuggestedStartLocation =
                 Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
             };
-            savePicker.FileTypeChoices.Add("BASH parameters", new List<string>() { ".param" });
-            savePicker.SuggestedFileName = $"{ScriptName}.param";
+            savePicker.FileTypeChoices.Add("Bash Wizard Files", new List<string>() { ".bw" });
+            savePicker.SuggestedFileName = $"{ScriptName}.bw";
             _fileBashScript = await savePicker.PickSaveFileAsync();
 
 
@@ -613,6 +693,25 @@ namespace bashWizard
             dataPackage.SetText(this.Json);
             Clipboard.SetContent(dataPackage);
 
+        }
+
+        private void LongName_TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            TextBox_LostFocus(sender, e);
+
+
+        }
+
+        private async void OnGetDebugConfig(object sender, RoutedEventArgs e)
+        {
+            ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+
+            var dbgWindow = new DebugConfig()
+            {
+                ConfigModel = model
+            };
+
+            await dbgWindow.ShowAsync(ContentDialogPlacement.Popup);
         }
     }
 }
