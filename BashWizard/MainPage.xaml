@@ -164,6 +164,15 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
+                    <!-- Save -->
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnUpdateShellScript" ToolTipService.ToolTip="Replace Generated Script...">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal"  >
+                                <SymbolIcon Symbol="Download" />
+                                <TextBlock Text="Update Shell Script" Margin="24,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
 
 
                     <!-- Add Parameter -->
@@ -229,7 +238,7 @@
                 </controls:GridSplitter.Element>
             </controls:GridSplitter>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,0,0,0">
-                <TextBlock Text="Script File Name: " FontSize="20" Style="{StaticResource KvpTextBlock}" />
+                <TextBlock Text="Bash Script File Name: " FontSize="20" Style="{StaticResource KvpTextBlock}" />
                 <TextBox FontSize="20" Margin="10,0,20,0" Width="450" VerticalAlignment="Center" Text="{x:Bind ScriptName, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" GotFocus="Text_GotFocus" />
                 <CheckBox Content="Echo Input" Margin="20,0,0,0" IsChecked="{x:Bind EchoInput, Mode=TwoWay}"/>
                 <CheckBox Content="Create Log File" Margin="20,0,0,0" IsChecked="{x:Bind CreateLogFile, Mode=TwoWay}"/>

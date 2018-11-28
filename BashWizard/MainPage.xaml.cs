@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -11,6 +12,7 @@ using Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Popups;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -33,7 +35,8 @@ namespace BashWizard
 
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
         private ParameterItem _selectedItem = null;
-        private StorageFile _fileBashScript = null;
+        private StorageFile _fileBashWizard = null;
+        private StorageFile _fileBashScript = null; 
         private bool _opening = false;
         private string _endScript = "";
         public MainPage()
@@ -351,7 +354,7 @@ namespace BashWizard
 
         private void AsyncSave()
         {
-            if (_fileBashScript == null)
+            if (_fileBashWizard == null)
             {
                 return;
             }
@@ -366,9 +369,9 @@ namespace BashWizard
                 try
                 {
                     string toSave = SerializeParameters();
-                    if (_fileBashScript != null)
+                    if (_fileBashWizard != null)
                     {
-                        await FileIO.WriteTextAsync(_fileBashScript, toSave);
+                        await FileIO.WriteTextAsync(_fileBashWizard, toSave);
                     }
                 }
                 catch { }  // because we are doing this an an asyc way, it is very possible that the file is locked.  we'll just each the exception and it will (eventually) save
@@ -493,19 +496,21 @@ namespace BashWizard
 
             picker.FileTypeFilter.Add(".bw");
 
-            _fileBashScript = await picker.PickSingleFileAsync();
-            if (_fileBashScript != null)
+            _fileBashWizard = await picker.PickSingleFileAsync();
+            if (_fileBashWizard != null)
             {
                 try
                 {
                     _opening = true;
-                    string s = await FileIO.ReadTextAsync(_fileBashScript);
+                    string s = await FileIO.ReadTextAsync(_fileBashWizard);
+                    ApplicationView appView = ApplicationView.GetForCurrentView();
+                    appView.Title = $"{_fileBashWizard.Name}";
                     Deserialize(s, true);
                 }
                 catch
                 {
                     BashScript = "Error opening file";
-                    _fileBashScript = null;
+                    _fileBashWizard = null;
                 }
                 finally
                 {
@@ -602,7 +607,7 @@ namespace BashWizard
             Json = "";
             Parameters.Clear();
             ScriptName = "";
-            _fileBashScript = null;
+            _fileBashWizard = null;
         }
 
         private async void OnSaveAs(object sender, RoutedEventArgs e)
@@ -614,7 +619,7 @@ namespace BashWizard
             };
             savePicker.FileTypeChoices.Add("Bash Wizard Files", new List<string>() { ".bw" });
             savePicker.SuggestedFileName = $"{ScriptName}.bw";
-            _fileBashScript = await savePicker.PickSaveFileAsync();
+            _fileBashWizard = await savePicker.PickSaveFileAsync();
 
 
             await Save();
@@ -623,7 +628,7 @@ namespace BashWizard
 
         private async void OnSave(object sender, RoutedEventArgs e)
         {
-            if (_fileBashScript == null)
+            if (_fileBashWizard == null)
             {
                 OnSaveAs(sender, e);
             }
@@ -638,9 +643,9 @@ namespace BashWizard
         {
             string toSave = SerializeParameters();
 
-            if (_fileBashScript != null)
+            if (_fileBashWizard != null)
             {
-                await FileIO.WriteTextAsync(_fileBashScript, toSave);
+                await FileIO.WriteTextAsync(_fileBashWizard, toSave);
             }
 
         }
@@ -712,6 +717,68 @@ namespace BashWizard
             };
 
             await dbgWindow.ShowAsync(ContentDialogPlacement.Popup);
+        }
+
+        private async void OnUpdateShellScript(object sender, RoutedEventArgs e)
+        {
+            var savePicker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+            };
+            savePicker.FileTypeChoices.Add("Shell Script Files", new List<string>() { ".sh" });
+            savePicker.SuggestedFileName = ScriptName;
+            _fileBashScript = await savePicker.PickSaveFileAsync();
+            if (_fileBashScript != null)
+            {
+                try
+                {
+
+                    
+                    string file = await FileIO.ReadTextAsync(_fileBashScript);
+                    file = file.Replace("\r", "");
+                    string[] lines = file.Split(new char[] { '\n' }); // assumes Unix style file
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(this.BashScript.Replace("\r", ""));
+                    bool hitMarker = false;
+                    foreach (var line in lines)
+                    {
+                        if (hitMarker)
+                        {
+                            sb.Append($"{line}\n");
+                            
+                        }
+                        else if (line.Trim() == "# --- END OF BASH WIZARD GENERATED CODE ---")
+                        {
+                            hitMarker = true;
+                        }
+                    }
+
+                    if (hitMarker)
+                    {
+                        if (_fileBashScript != null)
+                        {
+                            sb.Replace("\t", "    ");
+                            await FileIO.WriteTextAsync(_fileBashScript, sb.ToString());
+                        }
+                    }
+                }
+                catch
+                {
+                    BashScript = "Error opening file";
+                    _fileBashScript = null;
+                }
+                finally
+                {
+                    _opening = false;
+                    this.ScriptName = _fileBashScript.Name;
+
+                }
+
+            }
+
+
+
+
         }
     }
 }

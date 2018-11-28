@@ -197,9 +197,9 @@ namespace bashGeneratorSharedModels
                 longOptions.Append($"{param.LongParameter}{colon},");
 
                 // input Case
-                inputCase.Append($"{Tabs(3)}-{param.ShortParameter}|--{param.LongParameter})\n");
-                inputCase.Append($"{Tabs(4)}{param.VariableName}={param.ValueIfSet}\n");
-                inputCase.Append((param.RequiresInputString) ? $"{Tabs(4)}shift 2\n" : $"{Tabs(4)}shift 1\n");
+                inputCase.Append($"{Tabs(2)}-{param.ShortParameter} | --{param.LongParameter})\n");
+                inputCase.Append($"{Tabs(3)}{param.VariableName}={param.ValueIfSet}\n");
+                inputCase.Append((param.RequiresInputString) ? $"{Tabs(3)}shift 2\n" : $"{Tabs(3)}shift 1\n");
                 inputCase.Append($"{Tabs(3)};;\n");
 
                 // declare variables
@@ -216,7 +216,7 @@ namespace bashGeneratorSharedModels
 
                 if (param.RequiredParameter)
                 {
-                    requiredFilesIf.Append($" [ -z \"${{{param.VariableName}}}\" ] ||");
+                    requiredFilesIf.Append($"[ -z \"${{{param.VariableName}}}\" ] || ");
                 }
 
 
@@ -233,7 +233,7 @@ namespace bashGeneratorSharedModels
 
             if (requiredFilesIf.Length > 0)
             {
-                requiredFilesIf.Remove(requiredFilesIf.Length - 3, 3); // removes the " ||" at the end
+                requiredFilesIf.Remove(requiredFilesIf.Length - 4, 4); // removes the " || " at the end
                 requiredVariablesTemplate.Replace("__REQUIRED_FILES_IF__", requiredFilesIf.ToString());
             }
             else
