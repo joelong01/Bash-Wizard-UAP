@@ -1,11 +1,16 @@
 ﻿#!/bin/bash
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
 
-# make sure this version of *nix supports the right getopt 
-! getopt --test > /dev/null
+# make sure this version of *nix supports the right getopt
+! getopt --test 2>/dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
-    echo "I’m sorry, 'getopt --test' failed in this environment."
-    exit 1
+	echo "'getopt --test' failed in this environment.  please install getopt.  If on a mac see http://macappstore.org/gnu-getopt/"
+	exit 1
+fi
+# we have a dependency on jq
+if [[ ! -x "$(command -v jq)" ]]; then
+	echo "'jq is needed to run this script.  please install jq - see https://stedolan.github.io/jq/download/"
+	exit 1
 fi
 usage() {   
 __USAGE_LINE__ 1>&2
@@ -14,17 +19,9 @@ __USAGE__
     exit 1
 }
 echoInput() {     
-	echo __ECHO__
+    echo __ECHO__
 }
-# 
-# pull a value out of the config file
-# $1 is the name of the variable that has the JSON
-# $2 is the section name
-# $3 is the key name
-# assumes that $jsonConfig has been created
-function getValue() {
-    echo "$1" | jq -r '{"'$2'"} | .[]."'$3'"'
-}
+
 function parseInput() {
     
     local OPTIONS=__SHORT_OPTIONS__
@@ -48,13 +45,13 @@ function parseInput() {
     while true; do
         case "$1" in
 __INPUT_CASE__
-            --)
-                shift
-                break
+        --)
+            shift
+            break
             ;;
-            *)
-                echo "Invalid option $1 $2"
-                exit 3
+        *)
+            echo "Invalid option $1 $2"
+            exit 3
             ;;
         esac
     done
