@@ -3,7 +3,7 @@ if [ "${inputFile}" != "" ]; then
 	# load parameters from the file
 	configSection=$(jq . <"${inputFile}" | jq '."__SCRIPT_NAME__"')
 	if [[ -z $configSection ]]; then
-		echo "$inputFile or __SCRIPT_NAME__ section not found "
+		echoError "$inputFile or __SCRIPT_NAME__ section not found "
 		exit 3
 	fi
 __FILE_TO_SETTINGS__

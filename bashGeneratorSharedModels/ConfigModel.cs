@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace bashGeneratorSharedModels
 {
@@ -34,7 +34,7 @@ namespace bashGeneratorSharedModels
         {
             StripLeadingAndTrailingSpaces();
             return JsonConvert.SerializeObject(this, Formatting.Indented);
-            
+
         }
 
         public void StripLeadingAndTrailingSpaces()
@@ -46,7 +46,7 @@ namespace bashGeneratorSharedModels
                 parameter.LongParameter = parameter.LongParameter.Trim();
                 parameter.ShortParameter = parameter.ShortParameter.Trim();
                 parameter.ValueIfSet = parameter.ValueIfSet.Trim();
-                parameter.VariableName = parameter.VariableName.Trim();                
+                parameter.VariableName = parameter.VariableName.Trim();
             }
         }
 
@@ -120,7 +120,7 @@ namespace bashGeneratorSharedModels
                 {
                     return $"Parameter {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed.";
                 }
-                
+
             }
 
             if (TeeToLogFile && !CreateLogFile)
@@ -163,7 +163,7 @@ namespace bashGeneratorSharedModels
             StringBuilder sbBashScript = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "bashTemplate.sh"));
             StringBuilder logTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "logTemplate.sh"));
             StringBuilder parseInputTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "parseInputTemplate.sh"));
-            StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));
+            StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));            
             StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"Usage: $0 ");
             StringBuilder usageInfo = new StringBuilder($"{Tabs(1)}echo \"\"\n");
             StringBuilder echoInput = new StringBuilder($"\"{ScriptName}:\"{nl}");
@@ -173,8 +173,7 @@ namespace bashGeneratorSharedModels
             StringBuilder inputDeclarations = new StringBuilder("");
             StringBuilder parseInputFile = new StringBuilder("");
             StringBuilder requiredFilesIf = new StringBuilder("");
-            StringBuilder loggingSupport = new StringBuilder("");
-
+            StringBuilder loggingSupport = new StringBuilder("");           
 
             //
             //   phase 1: loop through the parameters and build our strings
@@ -230,6 +229,7 @@ namespace bashGeneratorSharedModels
 
             longOptions.Remove(longOptions.Length - 1, 1);
             inputCase.Remove(inputCase.Length - 1, 1);
+            usageInfo.Remove(usageInfo.Length - 1, 1);
 
             if (requiredFilesIf.Length > 0)
             {
@@ -259,6 +259,9 @@ namespace bashGeneratorSharedModels
             sbBashScript.Replace("__LONG_OPTIONS__", longOptions.ToString());
             sbBashScript.Replace("__INPUT_CASE__", inputCase.ToString());
             sbBashScript.Replace("__INPUT_DECLARATION__", inputDeclarations.ToString());
+
+            string inputOverridesRequired = (this.AcceptInputFile) ? "echoWarning \"Required parameters can be passed in the command line or in the input file.  The command line overrides the setting in the input file.\"" : "";
+            sbBashScript.Replace("__USAGE_INPUT_STATEMENT__", inputOverridesRequired);
 
             if (parseInputFile.Length > 0)
             {
@@ -313,7 +316,7 @@ namespace bashGeneratorSharedModels
                 sb.Append($"{Tabs(1)}]{nl}");
                 sb.Append($"}}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return $"Exception generating config\n\nException Info:\n===============\n{e.Message}";
             }
