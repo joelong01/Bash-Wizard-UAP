@@ -1,11 +1,11 @@
-﻿using bashGeneratorSharedModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using bashGeneratorSharedModels;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -36,13 +36,23 @@ namespace BashWizard
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
         private ParameterItem _selectedItem = null;
         private StorageFile _fileBashWizard = null;
-        private StorageFile _fileBashScript = null; 
+        private StorageFile _fileBashScript = null;
         private bool _opening = false;
         private string _endScript = "";
         public MainPage()
         {
             this.InitializeComponent();
             _endScript = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "EndOfScript.txt");
+            Parameters.CollectionChanged += Parameters_CollectionChanged;
+        }
+        /// <summary>
+        ///     I want to update the bash script when the collection is changed
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Parameters_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            UpdateTextInfo(true);
         }
 
         public static readonly DependencyProperty BashScriptProperty = DependencyProperty.Register("BashScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
@@ -135,8 +145,6 @@ namespace BashWizard
                 }
             }
 
-
-            UpdateTextInfo(true);
         }
 
 
@@ -216,9 +224,6 @@ namespace BashWizard
                 Parameters.Add(logParameter);
                 logParameter.PropertyChanged += ParameterPropertyChanged;
             }
-
-            UpdateTextInfo(true);
-
 
         }
 
@@ -316,7 +321,6 @@ namespace BashWizard
             {
                 Parameters.Remove(_selectedItem);
                 _selectedItem = null;
-                UpdateTextInfo(true);
                 if (Parameters.Count > 0)
                 {
                     var param = Parameters[Parameters.Count - 1];
@@ -333,11 +337,16 @@ namespace BashWizard
 
         private void UpdateTextInfo(bool setJsonText)
         {
+
             if (_opening)
             {
                 return;
             }
 
+            if (Parameters.Count == 0)
+            {
+                return;
+            }
 
             BashScript = GenerateBash();
             if (setJsonText)
@@ -415,67 +424,6 @@ namespace BashWizard
             }
         }
 
-        private void OnUpdate(object sender, RoutedEventArgs e)
-        {
-
-            UpdateTextInfo(true);
-        }
-
-        private void OnTest(object sender, RoutedEventArgs e)
-        {
-
-            ParameterItem param = new ParameterItem
-            {
-                ShortParameter = "r",
-                Description = "Azure Resource Group",
-                VariableName = "resourceGroup",
-                Default = "",
-                RequiresInputString = true,
-                LongParameter = "rource-group",
-                RequiredParameter = true
-
-            };
-
-
-            param.PropertyChanged += ParameterPropertyChanged;
-            Parameters.Add(param);
-
-
-
-            param = new ParameterItem
-            {
-                ShortParameter = "l",
-                Description = "the location of the VMs",
-                LongParameter = "location",
-                VariableName = "location",
-                Default = "westus2",
-                RequiresInputString = true,
-                RequiredParameter = true
-
-            };
-
-            param.PropertyChanged += ParameterPropertyChanged;
-            Parameters.Add(param);
-
-
-            param = new ParameterItem
-            {
-                ShortParameter = "d",
-                Description = "delete the resource group if it already exists",
-                LongParameter = "delete",
-                VariableName = "delete",
-                Default = "false",
-                RequiresInputString = false,
-                RequiredParameter = false,
-                ValueIfSet = "true"
-            };
-
-            param.PropertyChanged += ParameterPropertyChanged;
-            Parameters.Add(param);
-
-            ScriptName = "./createResourceGroup.sh";
-            UpdateTextInfo(true);
-        }
 
         private string SerializeParameters()
         {
@@ -536,19 +484,12 @@ namespace BashWizard
                 var result = ConfigModel.Deserialize(s);
                 if (result != null)
                 {
+                    _opening = true;
                     Parameters.Clear();
 
                     foreach (var param in result.Parameters)
                     {
-                        if (param.RequiredParameter)
-                        {
-                            Parameters.Insert(0, param);
-                        }
-                        else
-                        {
-                            Parameters.Add(param);
-                        }
-
+                        Parameters.Add(param);
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
                     this.ScriptName = result.ScriptName;
@@ -557,6 +498,7 @@ namespace BashWizard
                     this.TeeToLogFile = result.TeeToLogFile;
                     this.AcceptsInputFile = result.AcceptInputFile;
 
+                    _opening = false;
                     UpdateTextInfo(setJsonText);
                 }
             }
@@ -652,7 +594,7 @@ namespace BashWizard
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            UpdateTextInfo(true);
+            //  UpdateTextInfo(true);
         }
 
         private void Json_LostFocus(object sender, RoutedEventArgs e)
@@ -733,7 +675,7 @@ namespace BashWizard
                 try
                 {
 
-                    
+
                     string file = await FileIO.ReadTextAsync(_fileBashScript);
                     file = file.Replace("\r", "");
                     string[] lines = file.Split(new char[] { '\n' }); // assumes Unix style file
@@ -745,7 +687,7 @@ namespace BashWizard
                         if (hitMarker)
                         {
                             sb.Append($"{line}\n");
-                            
+
                         }
                         else if (line.Trim() == "# --- END OF BASH WIZARD GENERATED CODE ---")
                         {
