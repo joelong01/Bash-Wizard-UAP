@@ -144,7 +144,45 @@ namespace BashWizardConsole
                 ValueIfSet = "true"
             };
             paramList.Add(param);
-            ConfigModel model = new ConfigModel("test.sh", paramList, true, true, true, true);
+
+            param = new ParameterItem()
+            {
+                LongParameter = "create",
+                ShortParameter = "c",
+                VariableName = "create",
+                Description = "creates the resource",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            
+            param = new ParameterItem()
+            {
+                LongParameter = "verify",
+                ShortParameter = "v",
+                VariableName = "verify",
+                Description = "verifies the script ran correctly",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            paramList.Add(param);
+            param = new ParameterItem()
+            {
+                LongParameter = "delete",
+                ShortParameter = "d",
+                VariableName = "delete",
+                Description = "deletes whatever the script created",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            paramList.Add(param);
+
+            ConfigModel model = new ConfigModel("test.sh", paramList,  true, true, true);
             Console.WriteLine(model.Serialize());
          
         }

@@ -1,7 +1,10 @@
 ﻿#!/bin/bash
+# bashWizard version 0.900
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
 # this will make the error text stand out in red - if you are looking at these errors/warnings in the log file
 # you can use cat <logFile> to see the text in color.
+# if you want to have code anywhere in this script, put it between comments that look 
+# like  --- USER CODE STARTS HERE ---  and  --- USER CODE ENDS HERE ---  at the *beginning of the line*
 function echoError() {
     RED=$(tput setaf 1)
     NORMAL=$(tput sgr0)
@@ -77,11 +80,14 @@ __INPUT_CASE__
 }
 # input variables 
 __INPUT_DECLARATION__
-# now parse input to see if any of the parameters have been overridden
 parseInput "$@"
-__PARSE_INPUT_FILE
+
+__PARSE_INPUT_FILE__
 __REQUIRED_PARAMETERS__
 __LOGGING_SUPPORT_
-__BEGIN_TEE__
-__ECHO_INPUT__
-# --- END OF BASH WIZARD GENERATED CODE ---
+
+    echoInput
+
+__USER_CODE_1__
+
+__END_LOGGING_SUPPORT__

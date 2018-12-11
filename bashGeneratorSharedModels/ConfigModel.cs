@@ -11,23 +11,22 @@ namespace bashGeneratorSharedModels
     {
 
         public string ScriptName { get; set; } = null;
-        public bool EchoInput { get; set; } = true;
         public bool CreateLogFile { get; set; } = false;
-        public bool TeeToLogFile { get; set; } = false;
         public bool AcceptInputFile { get; set; } = false;
+        public bool CreateVerifyDeletePattern { get; set; } = false;
+        public string Version { get; set; } = "0.9";
         public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
 
-        public ConfigModel(string name, IEnumerable<ParameterItem> list, bool echoInput, bool createLogFile, bool timeScript, bool acceptsInput)
+        public ConfigModel(string name, IEnumerable<ParameterItem> list, bool createLogFile, bool acceptsInputFile, bool createVerifyDeletePattern)
         {
             ScriptName = name;
             if (list != null)
             {
                 Parameters.AddRange(list);
             }
-            EchoInput = echoInput;
             CreateLogFile = createLogFile;
-            TeeToLogFile = timeScript;
-            AcceptInputFile = acceptsInput;
+            AcceptInputFile = acceptsInputFile;
+            CreateVerifyDeletePattern = createVerifyDeletePattern;
         }
 
         public string Serialize()
@@ -123,10 +122,7 @@ namespace bashGeneratorSharedModels
 
             }
 
-            if (TeeToLogFile && !CreateLogFile)
-            {
-                return "Add the Tee requires that \"Create Log File\" be selected";
-            }
+         
 
 
             return "";
@@ -157,13 +153,16 @@ namespace bashGeneratorSharedModels
             {
                 return validateString;
             }
+            
 
             string nl = "\n";
 
             StringBuilder sbBashScript = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "bashTemplate.sh"));
             StringBuilder logTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "logTemplate.sh"));
             StringBuilder parseInputTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "parseInputTemplate.sh"));
-            StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));            
+            StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));
+            StringBuilder verifyCreateDeleteTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "verifyCreateDeleteTemplate.sh"));
+            StringBuilder endLogTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "endLogTemplate.sh"));
             StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"Usage: $0 ");
             StringBuilder usageInfo = new StringBuilder($"{Tabs(1)}echo \"\"\n");
             StringBuilder echoInput = new StringBuilder($"\"{ScriptName}:\"{nl}");
@@ -244,6 +243,7 @@ namespace bashGeneratorSharedModels
             if (this.CreateLogFile)
             {
                 logTemplate.Replace("__LOG_FILE_NAME__", this.ScriptName + ".log");
+
             }
             else
             {
@@ -267,19 +267,28 @@ namespace bashGeneratorSharedModels
             {
                 parseInputTemplate.Replace("__SCRIPT_NAME__", this.ScriptName);
                 parseInputTemplate.Replace("__FILE_TO_SETTINGS__", parseInputFile.ToString());
-                sbBashScript.Replace("__PARSE_INPUT_FILE", parseInputTemplate.ToString());
+                sbBashScript.Replace("__PARSE_INPUT_FILE__", parseInputTemplate.ToString());
             }
             else
             {
-                sbBashScript.Replace("__PARSE_INPUT_FILE", "");
+                sbBashScript.Replace("__PARSE_INPUT_FILE__", "");
             }
-
-            sbBashScript.Replace("__BEGIN_TEE__", this.TeeToLogFile ? EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "beginTee.sh") : "");
-
 
             sbBashScript.Replace("__REQUIRED_PARAMETERS__", requiredVariablesTemplate.ToString());
             sbBashScript.Replace("__LOGGING_SUPPORT_", logTemplate.ToString());
-            sbBashScript.Replace("__ECHO_INPUT__", this.EchoInput ? "echoInput" : "");
+            sbBashScript.Replace("__END_LOGGING_SUPPORT__", this.CreateLogFile ? endLogTemplate.ToString() : "");
+
+            if (this.CreateVerifyDeletePattern)
+            {
+                sbBashScript.Replace("__USER_CODE_1__", verifyCreateDeleteTemplate.ToString());
+            }
+            else
+            {
+                string userCode = $"{Tabs(1)}# --- USER CODE STARTS HERE ---{nl}" + $"{Tabs(1)}__USER_CODE_1__{nl}" + $"{Tabs(1)}# --- USER CODE ENDS HERE ---{nl}";
+                sbBashScript.Replace("__USER_CODE_1__", userCode);
+
+            }
+
             return sbBashScript.ToString();
 
 

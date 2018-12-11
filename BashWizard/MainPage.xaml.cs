@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Reflection;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using bashGeneratorSharedModels;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Core;
@@ -37,13 +39,22 @@ namespace BashWizard
         private ParameterItem _selectedItem = null;
         private StorageFile _fileBashWizard = null;
         private StorageFile _fileBashScript = null;
+        private StorageFolder _bashWizardFolder = null;
+        private StorageFolder _bashScriptFolder = null;
+        private Dictionary<string, string> _userBashDict = null;
         private bool _opening = false;
-        private string _endScript = "";
         public MainPage()
         {
             this.InitializeComponent();
-            _endScript = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "EndOfScript.txt");
             Parameters.CollectionChanged += Parameters_CollectionChanged;
+            _userBashDict = new Dictionary<string, string>
+            {
+                ["__USER_CODE_1__"] = "",
+                ["__USER_CODE_2__"] = "",
+                ["__USER_DELETE_CODE__"] = "",
+                ["__USER_VERIFY_CODE__"] = "",
+                ["__USER_CREATE_CODE__"] = ""
+            };
         }
         /// <summary>
         ///     I want to update the bash script when the collection is changed
@@ -59,11 +70,64 @@ namespace BashWizard
         public static readonly DependencyProperty JsonProperty = DependencyProperty.Register("Json", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty EndScriptProperty = DependencyProperty.Register("EndScript", typeof(string), typeof(MainPage), new PropertyMetadata(""));
         public static readonly DependencyProperty InputSectionProperty = DependencyProperty.Register("InputSection", typeof(string), typeof(MainPage), new PropertyMetadata(""));
-        public static readonly DependencyProperty EchoInputProperty = DependencyProperty.Register("EchoInput", typeof(bool), typeof(MainPage), new PropertyMetadata(true, EchoInputChanged));
         public static readonly DependencyProperty CreateLogFileProperty = DependencyProperty.Register("CreateLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateLogFileChanged));
-        public static readonly DependencyProperty TeeToLogFileProperty = DependencyProperty.Register("TeeToLogFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, TeeToLogFileChanged));
         public static readonly DependencyProperty AcceptsInputFileProperty = DependencyProperty.Register("AcceptsInputFile", typeof(bool), typeof(MainPage), new PropertyMetadata(false, AcceptsInputFileChanged));
         public static readonly DependencyProperty ScriptNameProperty = DependencyProperty.Register("ScriptName", typeof(string), typeof(MainPage), new PropertyMetadata("", ScriptNameChanged));
+        public static readonly DependencyProperty CreateVerifyDeleteProperty = DependencyProperty.Register("CreateVerifyDelete", typeof(bool), typeof(MainPage), new PropertyMetadata(false, CreateVerifyDeleteChanged));
+
+        public bool CreateVerifyDelete
+        {
+            get => (bool)GetValue(CreateVerifyDeleteProperty);
+            set => SetValue(CreateVerifyDeleteProperty, value);
+        }
+        private static void CreateVerifyDeleteChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var depPropClass = d as MainPage;
+            var depPropValue = (bool)e.NewValue;
+            depPropClass?.SetCreateVerifyDelete(depPropValue);
+        }
+        private void SetCreateVerifyDelete(bool value)
+        {
+
+            ParameterItem param = new ParameterItem()
+            {
+                LongParameter = "create",
+                ShortParameter = "c",
+                VariableName = "create",
+                Description = "creates the resource",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            AddOptionParameter(param, value);
+            param = new ParameterItem()
+            {
+                LongParameter = "verify",
+                ShortParameter = "v",
+                VariableName = "verify",
+                Description = "verifies the script ran correctly",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            AddOptionParameter(param, value);
+            param = new ParameterItem()
+            {
+                LongParameter = "delete",
+                ShortParameter = "d",
+                VariableName = "delete",
+                Description = "deletes whatever the script created",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            AddOptionParameter(param, value);
+
+        }
+
 
         public string ScriptName
         {
@@ -105,75 +169,23 @@ namespace BashWizard
         private void SetAcceptsInputFile(bool newValue)
         {
 
-
             // i is the short name and input-file is the long name for the 
-            ParameterItem acceptsInputParam = null;
-            //
-            //  see if we already have the parameter
-            foreach (var param in Parameters)
+            ParameterItem param = new ParameterItem()
             {
-                if (param.ShortParameter == "i" && param.LongParameter == "input-file")
-                {
-                    acceptsInputParam = param;
-                    break;
-                }
-            }
-            if (newValue)
-            {
-                if (acceptsInputParam == null)
-                {
-                    acceptsInputParam = new ParameterItem()
-                    {
-                        ShortParameter = "i",
-                        LongParameter = "input-file",
-                        VariableName = "inputFile",
-                        Description = "filename that contains the JSON values to drive the script.  command line overrides file",
-                        RequiresInputString = true,
-                        Default = "", // this needs to be empty because if it is set, the script will try to find the file...
-                        RequiredParameter = false,
-                        ValueIfSet = "$2"
-                    };
+                ShortParameter = "i",
+                LongParameter = "input-file",
+                VariableName = "inputFile",
+                Description = "filename that contains the JSON values to drive the script.  command line overrides file",
+                RequiresInputString = true,
+                Default = "", // this needs to be empty because if it is set, the script will try to find the file...
+                RequiredParameter = false,
+                ValueIfSet = "$2"
+            };
 
-                    Parameters.Insert(0, acceptsInputParam);
-                }
-            }
-            else
-            {
-                if (acceptsInputParam != null)
-                {
-                    Parameters.Remove(acceptsInputParam);
-                }
-            }
+            AddOptionParameter(param, newValue);
 
         }
 
-
-
-
-        public bool TeeToLogFile
-        {
-            get => (bool)GetValue(TeeToLogFileProperty);
-            set => SetValue(TeeToLogFileProperty, value);
-        }
-        private static void TeeToLogFileChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var depPropClass = d as MainPage;
-            var depPropValue = (bool)e.NewValue;
-            depPropClass?.SetTeeToLogFile(depPropValue);
-        }
-        private void SetTeeToLogFile(bool value)
-        {
-            if (value)
-            {
-                EndScript = _endScript;
-            }
-            else
-            {
-                EndScript = "";
-            }
-
-            UpdateTextInfo(true);
-        }
 
         public bool CreateLogFile
         {
@@ -188,63 +200,54 @@ namespace BashWizard
         }
         private void SetCreateLogDir(bool value)
         {
+            ParameterItem logParameter = new ParameterItem()
+            {
+                LongParameter = "log-directory",
+                ShortParameter = "l",
+                Description = "directory for the log file.  the log file name will be based on the script name",
+                VariableName = "logDirectory",
+                Default = "\"./\"",
+                RequiresInputString = true,
+                RequiredParameter = false,
+                ValueIfSet = "$2"
+            };
 
+            AddOptionParameter(logParameter, value);
+
+        }
+
+        private void AddOptionParameter(ParameterItem item, bool add)
+        {
             if (_opening)
             {
                 return;
             }
 
-            ParameterItem logParameter = null;
-            foreach (var param in Parameters)
+            ParameterItem param = null;
+            foreach (var p in Parameters)
             {
-                if (param.VariableName == "logDirectory")
+                if (p.VariableName == item.VariableName)
                 {
-                    logParameter = param;
+                    param = p;
                     break;
                 }
             }
 
             //
             //  need to have the right parameter for long line to work correctly -- make sure it is there, and if not, add it.
-            if (value && logParameter == null)
+            if (add && param == null)
             {
-
-                logParameter = new ParameterItem()
-                {
-                    LongParameter = "log-directory",
-                    ShortParameter = "l",
-                    Description = "directory for the log file.  the log file name will be based on the script name",
-                    VariableName = "logDirectory",
-                    Default = "\"./\"",
-                    RequiresInputString = true,
-                    RequiredParameter = false,
-                    ValueIfSet = "$2"
-                };
-
-                Parameters.Add(logParameter);
-                logParameter.PropertyChanged += ParameterPropertyChanged;
+                Parameters.Add(item);
+                item.PropertyChanged += ParameterPropertyChanged;
+            }
+            else if (!add && param != null)
+            {
+                param.PropertyChanged -= ParameterPropertyChanged;
+                Parameters.Remove(param);
             }
 
-        }
-
-
-        public bool EchoInput
-        {
-            get => (bool)GetValue(EchoInputProperty);
-            set => SetValue(EchoInputProperty, value);
-        }
-        private static void EchoInputChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var depPropClass = d as MainPage;
-            var depPropValue = (bool)e.NewValue;
-            depPropClass?.SetEchoInput(depPropValue);
-        }
-        private void SetEchoInput(bool value)
-        {
             UpdateTextInfo(true);
         }
-
-
 
         public string Json
         {
@@ -280,7 +283,7 @@ namespace BashWizard
             if (e.PropertyName == "LongParameter")
             {
                 ParameterItem item = sender as ParameterItem;
-                ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+                ConfigModel model = new ConfigModel(ScriptName, Parameters, CreateLogFile, AcceptsInputFile, CreateVerifyDelete);
                 if (item.ShortParameter == "") // dont' pick one if the user already did...
                 {
                     for (int i = 0; i < item.LongParameter.Length; i++)
@@ -373,18 +376,24 @@ namespace BashWizard
                 return;
             }
 
-            var ignored = CoreWindow.GetForCurrentThread().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+            if (_fileBashWizard != null)
             {
-                try
-                {
-                    string toSave = SerializeParameters();
-                    if (_fileBashWizard != null)
-                    {
-                        await FileIO.WriteTextAsync(_fileBashWizard, toSave);
-                    }
-                }
-                catch { }  // because we are doing this an an asyc way, it is very possible that the file is locked.  we'll just each the exception and it will (eventually) save
-            });
+                FileIO.WriteTextAsync(_fileBashWizard, this.Json).AsTask().RunSynchronously();
+            }
+            if (_fileBashScript != null)
+            {
+                FileIO.WriteTextAsync(_fileBashScript, this.BashScript).AsTask().RunSynchronously();
+            }
+
+            //var ignored = CoreWindow.GetForCurrentThread().Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+            //{
+            //    try
+            //    {
+            //        await Save();
+            //        this.InputSection = "Async Save worked.";
+            //    }
+            //    catch { }  // because we are doing this an an asyc way, it is very possible that the file is locked.  we'll just each the exception and it will (eventually) save
+            //});
 
         }
 
@@ -399,10 +408,17 @@ namespace BashWizard
         private string GenerateBash()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, CreateLogFile, AcceptsInputFile, CreateVerifyDelete);
             try
             {
-                return model.ToBash();
+                string template = model.ToBash();
+                StringBuilder sb = new StringBuilder(template);
+                foreach (var kvp in _userBashDict)
+                {
+                    sb.Replace(kvp.Key, kvp.Value);
+                }
+
+                return sb.ToString();                
             }
             catch (Exception e)
             {
@@ -413,7 +429,7 @@ namespace BashWizard
         private string GenerateInputBash()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, CreateLogFile, AcceptsInputFile, CreateVerifyDelete);
             try
             {
                 return model.SerializeInputJson();
@@ -428,23 +444,37 @@ namespace BashWizard
         private string SerializeParameters()
         {
             var list = new List<ParameterItem>(Parameters);
-            ConfigModel model = new ConfigModel(ScriptName, list, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            ConfigModel model = new ConfigModel(ScriptName, list, CreateLogFile, AcceptsInputFile, CreateVerifyDelete);
             return model.Serialize();
         }
 
+        private async Task GetFolders()
+        {
+            _bashWizardFolder = await GetSaveFolder("Bash Wizard files", "BashWizardFolder", ".bw");
+            _bashScriptFolder = await GetSaveFolder("Bash Scripts", "BashScriptFolder", ".sh");
+        }
 
         private async void OnOpen(object sender, RoutedEventArgs e)
         {
-            var picker = new FileOpenPicker
+            try
             {
-                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-                ViewMode = PickerViewMode.List
+                await GetFolders();
 
-            };
+                var picker = new FileOpenPicker
+                {
+                    SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                    ViewMode = PickerViewMode.List,
 
-            picker.FileTypeFilter.Add(".bw");
+                };
 
-            _fileBashWizard = await picker.PickSingleFileAsync();
+                picker.FileTypeFilter.Add(".bw");
+                _fileBashWizard = await picker.PickSingleFileAsync();
+            }
+            catch (Exception ex)
+            {
+                BashScript = "Error: " + ex.Message;
+                _fileBashWizard = null;
+            }
             if (_fileBashWizard != null)
             {
                 try
@@ -454,11 +484,17 @@ namespace BashWizard
                     ApplicationView appView = ApplicationView.GetForCurrentView();
                     appView.Title = $"{_fileBashWizard.Name}";
                     Deserialize(s, true);
-                }
-                catch
-                {
                     BashScript = "Error opening file";
                     _fileBashWizard = null;
+                    _opening = true;
+                    _fileBashScript = await _bashScriptFolder.CreateFileAsync(this.ScriptName, CreationCollisionOption.OpenIfExists);
+                    this.BashScript = await FileIO.ReadTextAsync(_fileBashScript);
+                    await ParseUserScript(this.BashScript);
+                }
+                catch (Exception except)
+                {
+                    this.BashScript = "Error opening file:" + except.Message;
+                    _fileBashScript = null;
                 }
                 finally
                 {
@@ -470,6 +506,61 @@ namespace BashWizard
 
 
 
+        }
+
+        /// <summary>
+        ///     this function will either return the storage folder named "token" (we'll use "BashWizardFolder" and "BashScriptFolder") or prompt 
+        ///     the user to find the folder for us. we need to do this once for each user.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public async Task<StorageFolder> GetSaveFolder(string type, string token, string extension)
+        {
+
+            StorageFolder folder = null;
+            try
+            {
+                if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
+                {
+
+                    folder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                    return folder;
+                }
+            }
+            catch { }
+
+            string content = $"After clicking on \"Close\" pick the default location for all your {type}.\nYou will only have to do this once.";
+            MessageDialog dlg = new MessageDialog(content, "Bash Wizard");
+            try
+            {
+                await dlg.ShowAsync();
+
+                FolderPicker picker = new FolderPicker
+                {
+                    SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+                };
+
+                picker.FileTypeFilter.Add(extension);
+
+                folder = await picker.PickSingleFolderAsync();
+                if (folder != null)
+                {
+                    StorageApplicationPermissions.FutureAccessList.AddOrReplace(token, folder);
+                }
+                else
+                {
+                    folder = ApplicationData.Current.LocalFolder;
+                }
+
+
+                return folder;
+            }
+            catch (Exception except)
+            {
+                Debug.WriteLine(except.ToString());
+            }
+
+            return null;
         }
 
         private void Deserialize(string s, bool setJsonText)
@@ -493,11 +584,9 @@ namespace BashWizard
                         param.PropertyChanged += ParameterPropertyChanged;
                     }
                     this.ScriptName = result.ScriptName;
-                    this.EchoInput = result.EchoInput;
                     this.CreateLogFile = result.CreateLogFile;
-                    this.TeeToLogFile = result.TeeToLogFile;
                     this.AcceptsInputFile = result.AcceptInputFile;
-
+                    this.CreateVerifyDelete = result.CreateVerifyDeletePattern;
                     _opening = false;
                     UpdateTextInfo(setJsonText);
                 }
@@ -554,15 +643,43 @@ namespace BashWizard
 
         private async void OnSaveAs(object sender, RoutedEventArgs e)
         {
+            UpdateTextInfo(true);
+            if (this.ScriptName == "")
+            {
+                this.BashScript = "You must specify a script name";
+                return;
+            }
             var savePicker = new FileSavePicker
             {
                 SuggestedStartLocation =
-                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary
+                PickerLocationId.DocumentsLibrary
             };
             savePicker.FileTypeChoices.Add("Bash Wizard Files", new List<string>() { ".bw" });
             savePicker.SuggestedFileName = $"{ScriptName}.bw";
+            await GetFolders();
             _fileBashWizard = await savePicker.PickSaveFileAsync();
+            string fqn = Path.Combine(_bashScriptFolder.Path);
+            if (File.Exists(fqn))
+            {
+                ContentDialog dlg = new ContentDialog()
+                {
+                    Title = "Bash Wizard",
+                    Content = $"\n{fqn} already exists.\nReplace it?",
+                    PrimaryButtonText = "Yes",
+                    SecondaryButtonText = "No"
+                };
 
+                dlg.SecondaryButtonClick += (o, i) =>
+                {
+                    return;
+                };
+
+
+                await dlg.ShowAsync();
+
+            }
+
+            _fileBashScript = await _bashScriptFolder.CreateFileAsync(this.ScriptName, CreationCollisionOption.ReplaceExisting);
 
             await Save();
 
@@ -583,11 +700,20 @@ namespace BashWizard
 
         private async Task Save()
         {
-            string toSave = SerializeParameters();
-
-            if (_fileBashWizard != null)
+            try
+            {                
+                if (_fileBashWizard != null)
+                {
+                    await FileIO.WriteTextAsync(_fileBashWizard, this.Json);
+                }
+                if (_fileBashScript != null)
+                {
+                    await FileIO.WriteTextAsync(_fileBashScript, this.BashScript);
+                }
+            }
+             catch (Exception e)
             {
-                await FileIO.WriteTextAsync(_fileBashWizard, toSave);
+                this.InputSection = "Exception saving file: " + e.Message;
             }
 
         }
@@ -651,7 +777,7 @@ namespace BashWizard
 
         private async void OnGetDebugConfig(object sender, RoutedEventArgs e)
         {
-            ConfigModel model = new ConfigModel(ScriptName, Parameters, EchoInput, CreateLogFile, TeeToLogFile, AcceptsInputFile);
+            ConfigModel model = new ConfigModel(ScriptName, Parameters, CreateLogFile, AcceptsInputFile, CreateVerifyDelete);
 
             var dbgWindow = new DebugConfig()
             {
@@ -721,6 +847,86 @@ namespace BashWizard
 
 
 
+        }
+
+        /// <summary>
+        ///     Parse the script into a dictionary that we will use to hold the strings (keys and values) 
+        ///     that are needed to replace tokens in the bash templates created by the Model
+        /// </summary>
+        /// <param name="userBash"></param>
+        /// <returns></returns>
+        private async Task ParseUserScript(string userBash)
+        {
+
+            userBash = userBash.Replace("\r", "");
+            string versionLine = "# bashWizard version ";
+            int index = userBash.IndexOf(versionLine);
+            string userBashVersion = "0.1";
+            if (index > 0)
+            {
+                userBashVersion = userBash.Substring(index + versionLine.Length, 5);
+            }
+
+            if (userBashVersion == "0.1")
+            {
+                //
+                //   old style script
+                //
+
+                string[] userBashTokens = userBash.Split(new string[] { "# --- END OF BASH WIZARD GENERATED CODE ---", " # --- YOUR SCRIPT ENDS HERE ---" }, StringSplitOptions.RemoveEmptyEntries);
+                if (userBashTokens.Length != 3)
+                {
+                    MessageDialog dlg = new MessageDialog("I can't auto convert a script of this version");
+                    await dlg.ShowAsync();
+                    return;
+                }
+
+                _userBashDict["__USER_CODE_1__"] = userBashTokens[1];
+
+
+            }
+            else if (userBashVersion == "0.900")
+            {
+                string[] userBashTokens = userBash.Split(new string[] { "# --- USER CODE STARTS HERE ---", "# --- USER CODE ENDS HERE ---" }, StringSplitOptions.RemoveEmptyEntries);
+                if (userBashTokens.Length == 7 && this.CreateVerifyDelete) // i'll let them delete the last two
+                {
+                    _userBashDict["__USER_CODE_1__"] = "";
+                    _userBashDict["__USER_CODE_2__"] = "";
+                    _userBashDict["__USER_DELETE_CODE__"] = userBashTokens[5];
+                    _userBashDict["__USER_VERIFY_CODE__"] = userBashTokens[3];
+                    _userBashDict["__USER_CREATE_CODE__"] = userBashTokens[1];
+                } else if (userBashTokens.Length != 10)
+                {
+                    MessageDialog dlg = new MessageDialog("the scriopt file has modified BashWizard comments and can't be auto-merged.  Please manually merge your changes.");
+                    await dlg.ShowAsync();
+                }
+                else
+                {
+
+                    _userBashDict["__USER_CODE_1__"] = userBashTokens[9];
+                    _userBashDict["__USER_CODE_2__"] = userBashTokens[7];
+                    _userBashDict["__USER_DELETE_CODE__"] = userBashTokens[5];
+                    _userBashDict["__USER_VERIFY_CODE__"] = userBashTokens[3];
+                    _userBashDict["__USER_CREATE_CODE__"] = userBashTokens[1];
+                }
+            }
+
+
+        }
+
+        private async void OnTest(object sender, RoutedEventArgs e)
+        {
+            await Task.Delay(0);
+            //StringBuilder newBash = new StringBuilder(GenerateBash().Replace("\r", ""));
+
+            //Dictionary<string, string> userBashDict = await ParseUserScript(this.BashScript);
+
+            //foreach (var kvp in userBashDict)
+            //{
+            //    newBash.Replace(kvp.Key, kvp.Value);
+            //}
+
+            //this.Json = newBash.ToString();
         }
     }
 }
