@@ -87,7 +87,7 @@ __REQUIRED_PARAMETERS__
 __LOGGING_SUPPORT_
 
     echoInput
-
+    # --- BEGIN USER CODE ---
 __USER_CODE_1__
-
+    # --- END USER CODE ---
 __END_LOGGING_SUPPORT__

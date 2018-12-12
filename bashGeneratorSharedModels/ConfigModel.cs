@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace bashGeneratorSharedModels
 {
@@ -15,9 +15,10 @@ namespace bashGeneratorSharedModels
         public bool AcceptInputFile { get; set; } = false;
         public bool CreateVerifyDeletePattern { get; set; } = false;
         public string Version { get; set; } = "0.9";
+        public string Description { get; set; } = "";
         public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
 
-        public ConfigModel(string name, IEnumerable<ParameterItem> list, bool createLogFile, bool acceptsInputFile, bool createVerifyDeletePattern)
+        public ConfigModel(string name, IEnumerable<ParameterItem> list, bool createLogFile, bool acceptsInputFile, bool createVerifyDeletePattern, string description)
         {
             ScriptName = name;
             if (list != null)
@@ -27,18 +28,19 @@ namespace bashGeneratorSharedModels
             CreateLogFile = createLogFile;
             AcceptInputFile = acceptsInputFile;
             CreateVerifyDeletePattern = createVerifyDeletePattern;
+            Description = description;
         }
 
         public string Serialize()
         {
             StripLeadingAndTrailingSpaces();
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
+            return "\n" + JsonConvert.SerializeObject(this, Formatting.Indented);
 
         }
 
         public void StripLeadingAndTrailingSpaces()
         {
-            foreach (var parameter in Parameters)
+            foreach (ParameterItem parameter in Parameters)
             {
                 parameter.Default = parameter.Default.Trim();
                 parameter.Description = parameter.Description.Trim();
@@ -74,7 +76,7 @@ namespace bashGeneratorSharedModels
             string paramKeyValuePairs = "";
             char[] quotes = { '"' };
             char[] commadNewLine = { ',', '\n', ' ' };
-            foreach (var param in Parameters)
+            foreach (ParameterItem param in Parameters)
             {
                 string defValue = param.Default;
                 defValue = defValue.TrimStart(quotes);
@@ -99,7 +101,7 @@ namespace bashGeneratorSharedModels
             //verify short names are unique
             HashSet<string> shortNames = new HashSet<string>();
             HashSet<string> longNames = new HashSet<string>();
-            foreach (var param in Parameters)
+            foreach (ParameterItem param in Parameters)
             {
                 if (param.ShortParameter == "" && param.LongParameter == "")
                 {
@@ -122,7 +124,7 @@ namespace bashGeneratorSharedModels
 
             }
 
-         
+
 
 
             return "";
@@ -145,7 +147,7 @@ namespace bashGeneratorSharedModels
         ///     line characters and 3) use StringBuilder.Replace() to put the strings into the right place in the bash file.
         /// </summary>
         /// <returns></returns>
-        public string ToBash()
+        public string ToBash(string userCode)
         {
 
             string validateString = ValidateParameters();
@@ -153,7 +155,7 @@ namespace bashGeneratorSharedModels
             {
                 return validateString;
             }
-            
+
 
             string nl = "\n";
 
@@ -163,7 +165,7 @@ namespace bashGeneratorSharedModels
             StringBuilder requiredVariablesTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "requiredVariablesTemplate.sh"));
             StringBuilder verifyCreateDeleteTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "verifyCreateDeleteTemplate.sh"));
             StringBuilder endLogTemplate = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "endLogTemplate.sh"));
-            StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"Usage: $0 ");
+            StringBuilder usageLine = new StringBuilder($"{Tabs(1)}echo \"{this.Description}\"\n{Tabs(1)}echo \"\"\n{Tabs(1)}echo \"Usage: $0 ");
             StringBuilder usageInfo = new StringBuilder($"{Tabs(1)}echo \"\"\n");
             StringBuilder echoInput = new StringBuilder($"\"{ScriptName}:\"{nl}");
             StringBuilder shortOptions = new StringBuilder("");
@@ -172,21 +174,21 @@ namespace bashGeneratorSharedModels
             StringBuilder inputDeclarations = new StringBuilder("");
             StringBuilder parseInputFile = new StringBuilder("");
             StringBuilder requiredFilesIf = new StringBuilder("");
-            StringBuilder loggingSupport = new StringBuilder("");           
-
+            StringBuilder loggingSupport = new StringBuilder("");
+            int longestLongParameter = GetLongestLongParameter() + 4;
             //
             //   phase 1: loop through the parameters and build our strings
-            foreach (var param in Parameters)
+            foreach (ParameterItem param in Parameters)
             {
                 //
                 //  first usage line
                 string required = (param.RequiredParameter) ? "Required" : "Optional";
                 usageLine.Append($"-{param.ShortParameter} | --{param.LongParameter} ");
-                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParameter} | --{param.LongParameter,-30} {required,-15} {param.Description}\"{nl}");
+                usageInfo.Append($"{Tabs(1)}echo \" -{param.ShortParameter} | --{param.LongParameter.PadRight(longestLongParameter)}{Tabs(1)}{required}{Tabs(1)}{param.Description}\"{nl}");
 
                 //
                 // the  echoInput function
-                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.LongParameter,-30} ${param.VariableName}\"{nl}");
+                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.LongParameter.PadRight(longestLongParameter, '.')}${param.VariableName}\"{nl}");
 
                 //
                 //  OPTIONS, LONGOPTS
@@ -260,7 +262,7 @@ namespace bashGeneratorSharedModels
             sbBashScript.Replace("__INPUT_CASE__", inputCase.ToString());
             sbBashScript.Replace("__INPUT_DECLARATION__", inputDeclarations.ToString());
 
-            string inputOverridesRequired = (this.AcceptInputFile) ? "echoWarning \"Required parameters can be passed in the command line or in the input file.  The command line overrides the setting in the input file.\"" : "";
+            string inputOverridesRequired = (this.AcceptInputFile) ? "echoWarning \"Parameters can be passed in the command line or in the input file.  The command line overrides the setting in the input file.\"" : "";
             sbBashScript.Replace("__USAGE_INPUT_STATEMENT__", inputOverridesRequired);
 
             if (parseInputFile.Length > 0)
@@ -280,20 +282,50 @@ namespace bashGeneratorSharedModels
 
             if (this.CreateVerifyDeletePattern)
             {
-                sbBashScript.Replace("__USER_CODE_1__", verifyCreateDeleteTemplate.ToString());
+                if (!ConfigModel.FunctionExists(userCode, "onVerify") && !ConfigModel.FunctionExists(userCode, "onDelete") && !ConfigModel.FunctionExists(userCode, "onCreate"))
+                {
+                    //
+                    //  if they don't have the functions, add the template code
+                    sbBashScript.Replace("__USER_CODE_1__", verifyCreateDeleteTemplate.ToString());
+                }
             }
-            else
-            {
-                string userCode = $"{Tabs(1)}# --- USER CODE STARTS HERE ---{nl}" + $"{Tabs(1)}__USER_CODE_1__{nl}" + $"{Tabs(1)}# --- USER CODE ENDS HERE ---{nl}";
-                sbBashScript.Replace("__USER_CODE_1__", userCode);
+            //
+            // put the user code where it belongs -- it might contain the functions already
+            sbBashScript.Replace("__USER_CODE_1__", userCode);
 
-            }
 
             return sbBashScript.ToString();
 
 
         }
+        public static bool FunctionExists(string bashScript, string name)
+        {
+            if (bashScript == "")
+            {
+                return false;
+            }
 
+            if (bashScript.IndexOf($"function {name}() {{") != -1)
+            {
+                return true;
+            }
+
+
+            return false;
+        }
+
+        private int GetLongestLongParameter()
+        {
+            int max = 0;
+            foreach (ParameterItem param in Parameters)
+            {
+                if (param.LongParameter.Length > max)
+                {
+                    max = param.LongParameter.Length;
+                }
+            }
+            return max;
+        }
 
         public string VSCodeDebugInfo(string scriptDirectory)
         {
@@ -316,7 +348,7 @@ namespace bashGeneratorSharedModels
 
                 sb.Append($"{Tabs(1)}\"program\": \"${{workspaceFolder}}/{scriptDir}/{scriptName}\",{nl}");
                 sb.Append($"{Tabs(1)}\"args\": [{nl}");
-                foreach (var param in Parameters)
+                foreach (ParameterItem param in Parameters)
                 {
                     sb.Append($"{Tabs(2)}\"--{param.LongParameter}\",{nl}{Tabs(2)}\"{param.Default.TrimStart(quotes).TrimEnd(quotes)}\",{nl}");
                 }

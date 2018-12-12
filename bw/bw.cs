@@ -100,7 +100,7 @@ namespace BashWizardConsole
         {
             string Json = System.IO.File.ReadAllText(configFile);
             var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.ToBash());
+            Console.WriteLine(model.ToBash(""));
         }
 
         private static void CreateSample()
@@ -182,7 +182,7 @@ namespace BashWizardConsole
             };
             paramList.Add(param);
 
-            ConfigModel model = new ConfigModel("test.sh", paramList,  true, true, true);
+            ConfigModel model = new ConfigModel("test.sh", paramList,  true, true, true, "Sample test script");
             Console.WriteLine(model.Serialize());
          
         }
