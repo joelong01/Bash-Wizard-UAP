@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace bashGeneratorSharedModels
+namespace bashWizardShared
 {
 
     public class ParameterItem : INotifyPropertyChanged
@@ -81,6 +81,15 @@ namespace bashGeneratorSharedModels
                 if (_RequiresInputString != value)
                 {
                     _RequiresInputString = value;
+                    if (value)
+                    {
+                        ValueIfSet = "$2";
+                    }
+                    else
+                    {
+                        ValueIfSet = "";
+                    }
+
                     NotifyPropertyChanged();
                 }
             }

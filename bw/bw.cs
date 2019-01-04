@@ -1,4 +1,4 @@
-﻿using bashGeneratorSharedModels;
+﻿using bashWizardShared;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -84,23 +84,23 @@ namespace BashWizardConsole
 
         private static void CreateVSCodeDebugInfo(string configFile, string scriptDirectory)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.VSCodeDebugInfo(scriptDirectory));
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.VSCodeDebugInfo(scriptDirectory));
         }
 
         private static void CreateInputJson(string configFile)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.SerializeInputJson());
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.SerializeInputJson());
         }
 
         private static void CreateBashScript(string configFile)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.ToBash(""));
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.ToBash());
         }
 
         private static void CreateSample()
@@ -182,8 +182,8 @@ namespace BashWizardConsole
             };
             paramList.Add(param);
 
-            ConfigModel model = new ConfigModel("test.sh", paramList,  true, true, true, "Sample test script");
-            Console.WriteLine(model.Serialize());
+            ScriptData model = new ScriptData("test.sh", paramList,  true, true, true, "Sample test script", "");
+            //Console.WriteLine(model.Serialize());
          
         }
 

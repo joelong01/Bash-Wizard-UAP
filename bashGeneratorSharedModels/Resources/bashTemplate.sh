@@ -1,10 +1,8 @@
 ﻿#!/bin/bash
-# bashWizard version 0.900
+# bashWizard version 0.901
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
 # this will make the error text stand out in red - if you are looking at these errors/warnings in the log file
 # you can use cat <logFile> to see the text in color.
-# if you want to have code anywhere in this script, put it between comments that look 
-# like  --- USER CODE STARTS HERE ---  and  --- USER CODE ENDS HERE ---  at the *beginning of the line*
 function echoError() {
     RED=$(tput setaf 1)
     NORMAL=$(tput sgr0)
@@ -31,7 +29,7 @@ if [[ ! -x "$(command -v jq)" ]]; then
 	echoError "'jq is needed to run this script.  please install jq - see https://stedolan.github.io/jq/download/"
 	exit 1
 fi
-usage() {
+function usage() {
 
     __USAGE_INPUT_STATEMENT__
 
@@ -40,7 +38,7 @@ __USAGE__
     echo ""
     exit 1
 }
-echoInput() {     
+function echoInput() {     
     echo __ECHO__
 }
 
