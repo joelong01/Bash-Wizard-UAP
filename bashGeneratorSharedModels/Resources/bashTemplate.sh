@@ -1,4 +1,5 @@
 ﻿#!/bin/bash
+# bashWizard version 0.901
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
 # this will make the error text stand out in red - if you are looking at these errors/warnings in the log file
 # you can use cat <logFile> to see the text in color.
@@ -28,7 +29,7 @@ if [[ ! -x "$(command -v jq)" ]]; then
 	echoError "'jq is needed to run this script.  please install jq - see https://stedolan.github.io/jq/download/"
 	exit 1
 fi
-usage() {
+function usage() {
 
     __USAGE_INPUT_STATEMENT__
 
@@ -37,7 +38,7 @@ __USAGE__
     echo ""
     exit 1
 }
-echoInput() {     
+function echoInput() {     
     echo __ECHO__
 }
 
@@ -77,11 +78,14 @@ __INPUT_CASE__
 }
 # input variables 
 __INPUT_DECLARATION__
-# now parse input to see if any of the parameters have been overridden
 parseInput "$@"
-__PARSE_INPUT_FILE
+
+__PARSE_INPUT_FILE__
 __REQUIRED_PARAMETERS__
 __LOGGING_SUPPORT_
-__BEGIN_TEE__
-__ECHO_INPUT__
-# --- END OF BASH WIZARD GENERATED CODE ---
+
+    echoInput
+    # --- BEGIN USER CODE ---
+__USER_CODE_1__
+    # --- END USER CODE ---
+__END_LOGGING_SUPPORT__

@@ -1,4 +1,4 @@
-﻿using bashGeneratorSharedModels;
+﻿using bashWizardShared;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -84,23 +84,23 @@ namespace BashWizardConsole
 
         private static void CreateVSCodeDebugInfo(string configFile, string scriptDirectory)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.VSCodeDebugInfo(scriptDirectory));
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.VSCodeDebugInfo(scriptDirectory));
         }
 
         private static void CreateInputJson(string configFile)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.SerializeInputJson());
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.SerializeInputJson());
         }
 
         private static void CreateBashScript(string configFile)
         {
-            string Json = System.IO.File.ReadAllText(configFile);
-            var model = ConfigModel.Deserialize(Json);
-            Console.WriteLine(model.ToBash());
+            //string Json = System.IO.File.ReadAllText(configFile);
+            //var model = ScriptData.Deserialize(Json);
+            //Console.WriteLine(model.ToBash());
         }
 
         private static void CreateSample()
@@ -144,8 +144,46 @@ namespace BashWizardConsole
                 ValueIfSet = "true"
             };
             paramList.Add(param);
-            ConfigModel model = new ConfigModel("test.sh", paramList, true, true, true, true);
-            Console.WriteLine(model.Serialize());
+
+            param = new ParameterItem()
+            {
+                LongParameter = "create",
+                ShortParameter = "c",
+                VariableName = "create",
+                Description = "creates the resource",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            
+            param = new ParameterItem()
+            {
+                LongParameter = "verify",
+                ShortParameter = "v",
+                VariableName = "verify",
+                Description = "verifies the script ran correctly",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            paramList.Add(param);
+            param = new ParameterItem()
+            {
+                LongParameter = "delete",
+                ShortParameter = "d",
+                VariableName = "delete",
+                Description = "deletes whatever the script created",
+                RequiresInputString = false,
+                Default = "false",
+                RequiredParameter = false,
+                ValueIfSet = "true"
+            };
+            paramList.Add(param);
+
+            ScriptData model = new ScriptData("test.sh", paramList,  true, true, true, "Sample test script", "");
+            //Console.WriteLine(model.Serialize());
          
         }
 

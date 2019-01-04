@@ -1,4 +1,4 @@
-﻿using bashGeneratorSharedModels;
+﻿using bashWizardShared;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -9,8 +9,8 @@ namespace BashWizard
 {
     public sealed partial class DebugConfig : ContentDialog
     {
-        private ConfigModel _ConfigModel = null;
-        public ConfigModel ConfigModel
+        private ScriptData _ConfigModel = null;
+        public ScriptData ConfigModel
         {
             get => _ConfigModel;
             set
