@@ -1,7 +1,9 @@
-﻿using bashWizardShared;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Text;
+using bashWizardShared;
 
 
 namespace BashWizardConsole
@@ -16,12 +18,13 @@ namespace BashWizardConsole
 
             Parameter[] parameters = new Parameter[]
             {
-                new Parameter("CreateBashScript", "-f", "--input-file", true, ""),
-                new Parameter("CreateSample", "-c", "--create-sample-json", false, ""),
-                new Parameter("MakeJsonInputParameters", "-i", "--create-input-json", true, ""),
-                new Parameter("VSCodeDebugInfo", "-d", "--vs-code-debug-info", true, ""),
-                new Parameter("ScriptDirectory", "-r", "--script-directory", true, "./Scripts"),
-                new Parameter("Help", "-h", "--help", false, "")
+                //public Parameter(string name, string shortName, string longName, bool requiresInput, string value, bool required, string description)
+                new Parameter("CreateSample", "-c", "--create-sample-json", false, "", false, "Creates a sample bash script"),
+                new Parameter("ParseAndCreate", "-p", "--parse-and-create", false, "", false, "Parses the input file and creates the output file.  Typically used to update the to current BashWizard version"),
+                new Parameter("InputFile", "-i", "--input-file", true, "", false,"Required when passing --parse-and-create.  Represents the input bash file"),
+                new Parameter("OutputFile", "-o", "--output-file", true, "", true,"Required when passing --parse-and-create.  Represents the input bash file"),
+                new Parameter("VSCodeDebugInfo", "-d", "--vs-code-debug-info", true, "", false, "Outputs the JSON config needed for the VS Code Bash Debug extention"),
+                new Parameter("Help", "-h", "--help", false, "", false,"Prints the help")
             };
 
             InputValidation input = new InputValidation(parameters);
@@ -39,7 +42,7 @@ namespace BashWizardConsole
                 Console.Write(e.Message);
                 Console.BackgroundColor = bg;
                 Console.ForegroundColor = fg;
-                EchoHelp();
+                EchoHelp(parameters);
                 return;
             }
 
@@ -47,6 +50,43 @@ namespace BashWizardConsole
             {
                 CreateSample();
                 Console.WriteLine("");
+
+            }
+
+            if (input.IsFlagSet("ParseAndCreate"))
+            {
+                
+                string inputFile = input.GetValue("InputFile");
+                string outputFile = input.GetValue("OutputFile");
+                
+                if (inputFile == "" || outputFile == "")
+                {
+                    EchoHelp(parameters);
+                    return;
+                }
+                Console.WriteLine($"parsing {inputFile} to create {outputFile} ");
+                try
+                {
+                    var scriptData = new ScriptData();
+                    using (StreamReader srIn = new StreamReader(new FileStream(inputFile, FileMode.Open)))
+                    {
+                        
+                        var bashFile = srIn.ReadToEnd();
+                      //  Console.WriteLine(bashFile);
+                        scriptData.FromBash(bashFile);
+                        scriptData.ToBash();
+                        using (var srOut = new StreamWriter(new FileStream(outputFile, FileMode.Create)))
+                        {
+                            srOut.Write(scriptData.BashScript);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("The file could not be read:");
+                    Console.WriteLine(e.Message);
+                }
+
 
             }
 
@@ -70,16 +110,46 @@ namespace BashWizardConsole
 
             if (input.IsFlagSet("Help"))
             {
-                EchoHelp();
+                EchoHelp(parameters);
             }
 
         }
 
-        private static void EchoHelp()
+        private static (int maxLongParam, int maxDescription) GetLongestParameter(Parameter[] parameters)
         {
-            string usage = EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "usage.txt");
-            Console.WriteLine("");
-            Console.WriteLine(usage);
+            int maxLongParam = 0;
+            int maxDescription = 0;
+            foreach (var param in parameters)
+            {
+                if (param.LongName.Length > maxLongParam)
+                {
+                    maxLongParam = param.LongName.Length;
+                }
+
+                if (param.Description.Length > maxDescription)
+                {
+                    maxDescription = param.Description.Length;
+                }
+            }
+            return (maxLongParam, maxDescription);
+        }
+
+        private static void EchoHelp(Parameter[] parameters)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Usage:\n\n");
+            var (maxLongParam, maxDescription) = GetLongestParameter(parameters);
+            sb.Append($"\t{"Flag".PadRight(maxLongParam+10, ' ')}Required     {"Description".PadRight(maxDescription, ' ')}\n");
+            sb.Append($"\t{"".PadRight(maxLongParam + 5, '=')}     ========     {"".PadRight(maxDescription, '=')}\n");
+            foreach (var param in parameters)
+            {
+                sb.Append($"\t{param.ShortName} | {param.LongName.PadRight(maxLongParam + 5, ' ')}");
+                sb.Append(param.Required ? "(yes)        " : "(no)         ");
+                sb.Append($"{param.Description}\n");
+            }
+            sb.Append("\n");
+                        
+            Console.WriteLine(sb.ToString());
         }
 
         private static void CreateVSCodeDebugInfo(string configFile, string scriptDirectory)
@@ -156,7 +226,7 @@ namespace BashWizardConsole
                 RequiredParameter = false,
                 ValueIfSet = "true"
             };
-            
+
             param = new ParameterItem()
             {
                 LongParameter = "verify",
@@ -182,12 +252,12 @@ namespace BashWizardConsole
             };
             paramList.Add(param);
 
-            ScriptData model = new ScriptData("test.sh", paramList,  true, true, true, "Sample test script", "");
+            ScriptData model = new ScriptData("test.sh", paramList, true, true, true, "Sample test script", "");
             //Console.WriteLine(model.Serialize());
-         
+
         }
 
-       
+
     }
 }
 

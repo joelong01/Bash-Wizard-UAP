@@ -103,6 +103,10 @@ namespace bashWizardShared
         //
         //  when any property changes -- either on the ScriptData object *or* on the ParameterItem object, update the bash file
         //
+        //  you can change the parameter data inside this fuction, but what I tried to do was change only things that require
+        //  global knowledge in this fuction (e.g. auto picking a short name needs knowledge of all the short names).  if you 
+        //  just need information local to the parameter, change it in the property setters.
+        //
         private void ParameterOrScriptData_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (!UpdateOnPropertyChanged)
@@ -130,7 +134,7 @@ namespace bashWizardShared
                     }
                     if (!ValidateParameters())
                     {
-                        BashScript = ValidationErrors;
+                        item.ShortParameter = ""; // can't find a short name automatically                        
                     }
                 }
                 if (item.VariableName == "")
@@ -143,12 +147,6 @@ namespace bashWizardShared
                         item.VariableName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
                     }
                 }
-            }
-
-
-            if (e.PropertyName == "CreateLogFile")
-            {
-               // TODO: anything to do here?
             }
 
             if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode") // don't update the BashScript when we are updating the BashScript...

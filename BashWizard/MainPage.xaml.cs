@@ -411,5 +411,38 @@ namespace BashWizard
             dataPackage.SetText(ScriptData.BashScript);
             Clipboard.SetContent(dataPackage);
         }
+
+        private async void OnShowInputJson(object sender, RoutedEventArgs e)
+        {
+            ContentDialog dialog = new ContentDialog()
+            {
+                Title = "Bash Wizard: JSON Input"
+
+            };
+            var panel = new StackPanel();
+            var tb = new TextBox()
+            {
+                AcceptsReturn = true,
+                IsReadOnly = false,
+                FontFamily = new Windows.UI.Xaml.Media.FontFamily("Courier New"),
+                FontSize = 12,
+                Text = this.ScriptData.GetInputJson()
+            };
+            panel.Children.Add(tb);
+            dialog.Content = panel;
+            dialog.PrimaryButtonText = "Copy";
+            dialog.IsPrimaryButtonEnabled = true;
+            dialog.PrimaryButtonClick += delegate {
+                DataPackage dataPackage = new DataPackage();
+                dataPackage.SetText(tb.Text);
+                Clipboard.SetContent(dataPackage);
+            };
+            dialog.SecondaryButtonText = "Close";
+            dialog.SecondaryButtonClick += delegate {
+                dialog.Hide();
+            };
+
+            var result = await dialog.ShowAsync();
+        }
     }
 }

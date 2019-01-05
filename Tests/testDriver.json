@@ -1,0 +1,16 @@
+{
+    "testDriver.sh": {
+        "input-file": "./testDriver.json",
+        "log-directory": "./Logs",
+        "create": "false",
+        "verify": "false",
+        "delete": "false",
+        "test-input-file": "true",
+        "test-logging": "false",
+        "test-create": "true",
+        "test-verify": "true",
+        "test-delete": "true",
+        "load-parse-save": "true",
+        "optional-test-parameter": "Verify Test Parameter"
+    }
+}

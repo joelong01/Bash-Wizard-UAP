@@ -5,13 +5,16 @@ namespace BashWizardConsole
 {
     public class Parameter
     {
-        public Parameter(string name, string shortName, string longName, bool requiresInput, string value)
+        public Parameter(string name, string shortName, string longName, bool requiresInput, string value, bool required, string description)
         {
             Name = name;
             ShortName = shortName;
             LongName = longName;
             RequiresInput = requiresInput;
             Value = value;
+            Description = description;
+            Required = required;
+            
         }
 
         public bool RequiresInput { get; set; } = false;
@@ -19,6 +22,9 @@ namespace BashWizardConsole
         public string LongName { get; set; } = "";
         public string Value { get; set; } = "";
         public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool Required { get; set; } = false;
+        
     }
     public class InputValidation
     {
