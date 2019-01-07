@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -75,7 +74,7 @@ namespace bashWizardShared
                 return false;
             }
 
-            
+
             string nl = "\n";
 
             StringBuilder sbBashScript = new StringBuilder(EmbeddedResource.GetResourceFile(Assembly.GetExecutingAssembly(), "bashTemplate.sh"));
@@ -212,7 +211,7 @@ namespace bashWizardShared
             //
             // put the user code where it belongs -- it might contain the functions already
             sbBashScript.Replace("__USER_CODE_1__", this.UserCode);
-
+            sbBashScript.Replace("\r", String.Empty);
             this.BashScript = sbBashScript.ToString();
             ValidationErrorList.Clear();
             return true;
@@ -304,7 +303,7 @@ namespace bashWizardShared
             return sb.ToString();
         }
 
-      
+
 
         /// <summary>
         ///     Given a bash file, create a ScriptData object.  This is the "parse a bash script" function
@@ -316,8 +315,8 @@ namespace bashWizardShared
             try
             {
 
-                
-                
+
+
                 UpdateOnPropertyChanged = false; // this flag stops the NotifyPropertyChanged events from firing
                 _doNotGenerateBashScript = true;  // this flag tells everything that we are in the process of parsing
                 Reset();
@@ -378,7 +377,7 @@ namespace bashWizardShared
 
                 //
                 //  find the usage() function and parse it out - this gives us the 4 properties in the ParameterItem below
-                if (GetStringBetween(bash, "usage() {", "exit 1", out string bashFragment) == false)
+                if (GetStringBetween(bash, "usage() {", "}", out string bashFragment) == false)
                 {
                     ParseErrorList.Add(bashFragment);
 
@@ -390,13 +389,18 @@ namespace bashWizardShared
                     lines = bashFragment.Split(new string[] { "echo ", "\"" }, StringSplitOptions.RemoveEmptyEntries);
                     line = "";
                     count = 0;
-                    foreach (var l in lines)
+                    foreach (string l in lines)
                     {
                         line = l.Trim();
                         if (line == "")
                         {
                             continue;
                         }
+                        if (line == "exit 1")
+                        {
+                            break;
+                        }
+
                         count++;
                         if (count == 2)
                         {
@@ -413,13 +417,18 @@ namespace bashWizardShared
 
                         if (line.Substring(0, 1) == "-") // we have a parameter!
                         {
-                            string[] paramTokens = line.Split(new string[] { Tabs(1), "|" }, StringSplitOptions.RemoveEmptyEntries);
+                            string[] paramTokens = line.Split(new string[] { " ", "|" }, StringSplitOptions.RemoveEmptyEntries);
+                            string description = "";
+                            for (int i=3; i<paramTokens.Length; i++)
+                            {
+                                description += paramTokens[i] + " ";
+                            }
                             ParameterItem parameterItem = new ParameterItem()
                             {
                                 ShortParameter = paramTokens[0].Trim(),
                                 LongParameter = paramTokens[1].Trim(),
                                 RequiredParameter = (paramTokens[2].Trim() == "Required") ? true : false,
-                                Description = paramTokens.Length == 4 ? paramTokens[3].Trim() : "" // strictly speaking, the descirption can be null, and I found that in some scripts
+                                Description = description
                             };
 
 
@@ -434,7 +443,7 @@ namespace bashWizardShared
                 if (GetStringBetween(bash, "echoInput() {", "parseInput()", out bashFragment))
                 {
                     lines = bashFragment.Split('\n');
-                    foreach (var l in lines)
+                    foreach (string l in lines)
                     {
                         line = l.Trim();
                         if (line == "")
@@ -488,26 +497,28 @@ namespace bashWizardShared
                             }
                             // nameTokens[1] looks like "--long-param)
                             string longParam = nameTokens[1].Substring(3, nameTokens[1].Length - 4);
-                            var param = FindParameterByLongName(longParam);
+                            ParameterItem param = FindParameterByLongName(longParam);
                             if (param == null)
                             {
                                 ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, found a long parameter named {longParam} which was not found in the usage() function");
                             }
-                            param.VariableName = paramTokens[0].Trim();
-                            param.ValueIfSet = paramTokens[1].Trim();
-                            if (lines[index + 2].Trim() == "shift 1")
-                            {
-                                param.RequiresInputString = false;
-                            }
-                            else if (lines[index + 2].Trim() == "shift 2")
-                            {
-                                param.RequiresInputString = true;
-                            }
                             else
                             {
-                                ParseErrorList.Add($"When parsing the parseInput() function to see if {param.VariableName} requires input, found this line: {lines[index + 1]} which does not parse.  it should either be \"shift 1\" or \"shift 2\"");
+                                param.VariableName = paramTokens[0].Trim();
+                                param.ValueIfSet = paramTokens[1].Trim();
+                                if (lines[index + 2].Trim() == "shift 1")
+                                {
+                                    param.RequiresInputString = false;
+                                }
+                                else if (lines[index + 2].Trim() == "shift 2")
+                                {
+                                    param.RequiresInputString = true;
+                                }
+                                else
+                                {
+                                    ParseErrorList.Add($"When parsing the parseInput() function to see if {param.VariableName} requires input, found this line: {lines[index + 1]} which does not parse.  it should either be \"shift 1\" or \"shift 2\"");
+                                }
                             }
-
                             index += 2;
                         }
                     }
@@ -522,7 +533,7 @@ namespace bashWizardShared
                     // throw away the "declare "
                     bashFragment = bashFragment.Replace("declare ", "");
                     lines = bashFragment.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var l in lines)
+                    foreach (string l in lines)
                     {
                         line = l.Trim();
                         if (line == "")
@@ -540,8 +551,8 @@ namespace bashWizardShared
                             ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, the line {line} was encountered that didn't parse.  it should be in the form of varName=Default");
 
                         }
-                        var varName = varTokens[0].Trim();
-                        var param = FindParameterByVarName(varName);
+                        string varName = varTokens[0].Trim();
+                        ParameterItem param = FindParameterByVarName(varName);
                         if (param == null)
                         {
                             ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, found a variable named {varName} which was not found in the usage() function");
@@ -570,7 +581,7 @@ namespace bashWizardShared
                 //  "BashScript" also updates the ToggleButtons
                 _doNotGenerateBashScript = false; // setting this hear makes it so we don't generate the script when we change the Description and the Name
                 NotifyPropertyChanged("BashScript");
-              
+
 
 
 

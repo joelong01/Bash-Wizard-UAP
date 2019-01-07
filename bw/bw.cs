@@ -72,13 +72,12 @@ namespace BashWizardConsole
                     {
                         
                         var bashFile = srIn.ReadToEnd();
-                      //  Console.WriteLine(bashFile);
-                        scriptData.FromBash(bashFile);
-                        scriptData.ToBash();
-                        using (var srOut = new StreamWriter(new FileStream(outputFile, FileMode.Create)))
-                        {
-                            srOut.Write(scriptData.BashScript);
-                        }
+                        scriptData.FromBash(bashFile);                        
+                    }
+                    scriptData.ToBash();
+                    using (var srOut = new StreamWriter(new FileStream(outputFile, FileMode.Create)))
+                    {
+                        srOut.Write(scriptData.BashScript);
                     }
                 }
                 catch (Exception e)
