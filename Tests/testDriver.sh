@@ -232,6 +232,8 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	echo -n "looking for .net core..."
 	if [[ ! -x "$(command -v dotnet)" ]]; then
 		echoError "'.net core 2.1+ is needed to run this script.  please install it.  see https://docs.microsoft.com/en-us/dotnet/core/linux-prerequisites?tabs=netcore2x"
+        echoError "if running Windows, this will likely work: curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS"
+        echoError "but you will have to edit ~./profile to add .net to your path"
 		echoError "aftwards make sure dotnet.exe is in the path"
 		exit 1
 	fi
@@ -243,6 +245,8 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	declare bwDll="../bw/bin/Debug/netcoreapp2.1/publish/bw.dll" #this is the dll that should be built when the Bash-Wizard project is built *after* it is published!
 	if [[ ! -f "$bwDll" ]]; then
 		echoError "$bwDll does not exist. you need to both build *and* publish the bw project in Bash-Wizard"
+        echoError "to publish, right click on the bw project in Bash-Wizard solution and choose 'publish'"
+        echoError "click on 'Configure' and publish self-contained linux-64 binaries"
 		exit 0
 	else
 		echoInfo "found $bwDll"
