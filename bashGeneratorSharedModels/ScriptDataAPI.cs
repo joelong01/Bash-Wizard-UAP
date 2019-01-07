@@ -107,7 +107,8 @@ namespace bashWizardShared
 
                 //
                 // the  echoInput function
-                echoInput.Append($"{Tabs(1)}echo \"{Tabs(1)}{param.LongParameter.PadRight(longestLongParameter, '.')}${param.VariableName}\"{nl}");
+                echoInput.Append($"{Tabs(1)}echo -n \"{Tabs(1)}{param.LongParameter.PadRight(longestLongParameter, '.')} \"{nl}");
+                echoInput.Append($"{Tabs(1)}echoInfo \"${param.VariableName}\"{nl}");
 
                 //
                 //  OPTIONS, LONGOPTS
@@ -223,7 +224,7 @@ namespace bashWizardShared
         ///     this generates the JSON that this script needs for an input file
         /// </summary>
         /// <returns></returns>
-        public string SerializeInputJson()
+        public string GetInputJson()
         {
 
             //       we want something like

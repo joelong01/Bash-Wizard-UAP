@@ -199,7 +199,7 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                   
+
                     <!-- logging support -->
                     <ToggleButton Background="Transparent" HorizontalAlignment="Left" Click="OnToggleAddLoggingSupport" ToolTipService.ToolTip="Logging Support"  IsChecked="{x:Bind ScriptData.LoggingSupport, Mode=OneWay}" Margin="0,50,0,0">
                         <ToggleButton.Content>
@@ -236,12 +236,21 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                    <!--Copy JSON-->
+                    <!--Copy VS Code Debug JSON-->
                     <Button Background="Transparent" HorizontalAlignment="Left" Click="OnGetDebugConfig" ToolTipService.ToolTip="VS Code Debug Config" Margin="0,0, 0,0" >
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <SymbolIcon  Symbol="Favorite" />
                                 <TextBlock Text="VS Code Debug Config" Margin="24,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    <!--Copy input JSON-->
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnShowInputJson" ToolTipService.ToolTip="Show Input JSON" Margin="0,0, 0,0" >
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <SymbolIcon  Symbol="AllApps" />
+                                <TextBlock Text="Show Input JSON" Margin="24,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>
@@ -304,10 +313,13 @@
                 <TextBlock Text="Description: " FontSize="22" Style="{StaticResource KvpTextBlock}" Margin="0" Grid.Row="1" Grid.Column="5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 <TextBox FontSize="20" Margin="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"  Grid.Row="1" Grid.Column="7" Text="{x:Bind ScriptData.Description, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" GotFocus="Text_GotFocus" LostFocus="TextBox_LostFocus" />
             </Grid>
-            
-           
+
+
             <ListView Name="ListBox_Parameters" Grid.Row="1" ItemsSource="{x:Bind ScriptData.Parameters, Mode=OneWay}" ItemTemplate="{StaticResource ParameterItem}" SelectionChanged="OnSelectionChanged" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" 
                      Margin="0,0,0,0" Grid.RowSpan="1" VerticalAlignment="Stretch"  CanReorderItems="True" AllowDrop="True" >
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection/>
+                </ListView.ItemContainerTransitions>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>

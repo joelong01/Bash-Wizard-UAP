@@ -81,13 +81,20 @@ namespace bashWizardShared
                 if (_RequiresInputString != value)
                 {
                     _RequiresInputString = value;
+                    //
+                    //  if the parameter is required, the ValueIfSet has to be $2 to be valid
                     if (value)
                     {
                         ValueIfSet = "$2";
                     }
                     else
                     {
-                        ValueIfSet = "";
+                        //
+                        //  if not set, the ValueIfSet cannont be $2
+                        if (ValueIfSet == "$2")
+                        {
+                            ValueIfSet = "";
+                        }
                     }
 
                     NotifyPropertyChanged();
@@ -132,6 +139,14 @@ namespace bashWizardShared
                 if (_SetVal != value)
                 {
                     _SetVal = value;
+                    if (_SetVal == "$2")
+                    {
+                        RequiresInputString = true;
+                    }
+                    else
+                    {
+                        RequiresInputString = false;
+                    }
                     NotifyPropertyChanged();
                 }
             }
