@@ -21,8 +21,15 @@ function echoInfo {
 # make sure this version of *nix supports the right getopt
 ! getopt --test 2>/dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
-	echoError "'getopt --test' failed in this environment.  please install getopt.  If on a mac see http://macappstore.org/gnu-getopt/"
-	exit 1
+	echoError "'getopt --test' failed in this environment.  please install getopt."
+    read -p "install getopt using brew? [y,n]" response
+    if [[ $response == 'y' ]] || [[ $response == 'Y' ]]; then
+        ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+        brew install gnu-getopt
+        echo 'export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"' >> ~/.bash_profile
+        echoWarning "you'll need to restart the shell instance to load the new path"
+    fi
+   exit 1
 fi
 # we have a dependency on jq
 if [[ ! -x "$(command -v jq)" ]]; then
@@ -235,6 +242,7 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
         echoError "if running Windows, this will likely work: curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS"
         echoError "but you will have to edit ~./profile to add .net to your path"
 		echoError "aftwards make sure dotnet.exe is in the path"
+        echoError "if you are on a mac, you porbably want to add a symbolic link by running this: n -s /usr/local/share/dotnet/dotnet /usr/local/bin/"
 		exit 1
 	fi
 	echoInfo "found it!"
