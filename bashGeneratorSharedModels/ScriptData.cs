@@ -13,7 +13,7 @@ namespace bashWizardShared
     
     public partial class ScriptData : INotifyPropertyChanged
     {
-        private bool _doNotGenerateBashScript = false; 
+        private bool GenerateBashScript = false; 
         public ScriptData()
         {
             UpdateOnPropertyChanged = false;

@@ -264,6 +264,14 @@
                         </Button.Content>
                     </Button>
 
+                    <ToggleButton Background="Transparent" HorizontalAlignment="Left" Click="OnShowWarnings" ToolTipService.ToolTip="Show Warnings" Margin="0,50, 0,0" >
+                        <ToggleButton.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <SymbolIcon  Symbol="Important" />
+                                <TextBlock Text="Toggle Show Warnings" Margin="24,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ToggleButton.Content>
+                    </ToggleButton>
 
                 </StackPanel>
 
@@ -331,7 +339,10 @@
                     </Style>
                 </ListView.ItemContainerStyle>
             </ListView>
-            <TextBox Text="{x:Bind ScriptData.BashScript, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
+            <TextBox Name="txt_Bash" Text="{x:Bind ScriptData.BashScript, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" GotFocus="Text_GotFocus"/>
+
+            <TextBox Visibility="Collapsed" Name="txt_Warnings" Text="{x:Bind ScriptData.Warnings, Mode=OneWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
                              ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" GotFocus="Text_GotFocus"/>
 
         </Grid>

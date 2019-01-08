@@ -67,14 +67,14 @@ namespace BashWizardConsole
                 Console.WriteLine($"parsing {inputFile} to create {outputFile} ");
                 try
                 {
-                    var scriptData = new ScriptData();
+                    ScriptData scriptData = null;
                     using (StreamReader srIn = new StreamReader(new FileStream(inputFile, FileMode.Open)))
                     {
                         
                         var bashFile = srIn.ReadToEnd();
-                        scriptData.FromBash(bashFile);                        
+                        scriptData = ScriptData.FromBash(bashFile); // this will both parse it and generate a new file
                     }
-                    scriptData.ToBash();
+                    
                     using (var srOut = new StreamWriter(new FileStream(outputFile, FileMode.Create)))
                     {
                         srOut.Write(scriptData.BashScript);

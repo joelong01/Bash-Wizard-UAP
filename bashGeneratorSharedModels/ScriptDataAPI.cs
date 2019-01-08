@@ -56,14 +56,19 @@ namespace bashWizardShared
         /// <returns>true on success, false on failure</returns>
         public bool ToBash()
         {
-            if (_doNotGenerateBashScript)
+            if (!GenerateBashScript)
             {
                 return false;
             }
 
             if (this.Parameters.Count == 0)
             {
-                return false;
+                //
+                //  if there are no parameters, just mark it as user code
+                GenerateBashScript = false;
+                this.BashScript = "# --- BEGIN USER CODE ---\n" + this.UserCode + "\n# --- END USER CODE ---";
+                GenerateBashScript = true;
+                return true;
 
             }
 
@@ -211,7 +216,7 @@ namespace bashWizardShared
             //
             // put the user code where it belongs -- it might contain the functions already
             sbBashScript.Replace("__USER_CODE_1__", this.UserCode);
-            sbBashScript.Replace("\r", String.Empty);
+            sbBashScript.Replace("\r", string.Empty);
             this.BashScript = sbBashScript.ToString();
             ValidationErrorList.Clear();
             return true;
@@ -309,20 +314,16 @@ namespace bashWizardShared
         ///     Given a bash file, create a ScriptData object.  This is the "parse a bash script" function
         /// </summary>
         /// <param name="bash"></param>
-        public bool FromBash(string bash)
+        public static ScriptData FromBash(string bash)
         {
+            ScriptData scriptData = new ScriptData();
 
             try
             {
 
-
-
-                UpdateOnPropertyChanged = false; // this flag stops the NotifyPropertyChanged events from firing
-                _doNotGenerateBashScript = true;  // this flag tells everything that we are in the process of parsing
-                Reset();
-                bash = bash.Replace("\r\n", "\n");
-                bash = bash.Replace("\r", "\n");
-
+                scriptData.UpdateOnPropertyChanged = false; // this flag stops the NotifyPropertyChanged events from firing
+                scriptData.GenerateBashScript = true;  // this flag tells everything that we are in the process of parsing
+                bash = bash.Replace("\r", string.Empty);
 
                 //
                 //  first look for the bash version
@@ -342,44 +343,38 @@ namespace bashWizardShared
                     //  see if it is a BashWizard by looking for the old comments
 
 
-                    if (GetStringBetween(bash, "# --- END OF BASH WIZARD GENERATED CODE ---", "# --- YOUR SCRIPT ENDS HERE ---", out string code) == false)
+                    if (scriptData.GetStringBetween(bash, "# --- END OF BASH WIZARD GENERATED CODE ---", "# --- YOUR SCRIPT ENDS HERE ---", out string code) == false)
                     {
-                        ParseErrorList.Add("The Bash Wizard couldn't find the version of this file and it doesn't have the old comment delimiters.  Not a Bash Wizard file.");
-
+                        scriptData.ParseErrorList.Add("The Bash Wizard couldn't find the version of this file and it doesn't have the old comment delimiters.  Not a Bash Wizard file.");
                     }
                     else
                     {
-                        this.UserCode = code;
+                        scriptData.UserCode = code;
                     }
 
                 }
 
-                if (this.UserCode == "") // not an old style script...
+                if (scriptData.UserCode == "") // not an old style script...
                 {
-
-                    if (userBashVersion < 0.9)
+                    bool ret = scriptData.GetStringBetween(bash, "# --- BEGIN USER CODE ---", "# --- END USER CODE ---", out string userCode); // if this is the second time through with one big bash file, this strips the comments so we don't keep adding them
+                    if (!ret)
                     {
-                        ParseErrorList.Add($"The Bash Wizard doesn't know how to open version {userBashVersion}.");
-
+                        scriptData.UserCode = bash.Trim(); // make it all user code                        
+                        scriptData.ParseErrorList.Add("Missing the comments around the user's code.  User Code starts after \"# --- BEGIN USER CODE ---\" and ends before \"# --- END USER CODE ---\" ");
+                        scriptData.ParseErrorList.Add("Adding comments and treating the whole file as user code");
+                        return scriptData;
                     }
-
-                    if (GetStringBetween(bash, "# --- BEGIN USER CODE ---", "# --- END USER CODE ---", out string userCode) == false)
-                    {
-                        ParseErrorList.Add("Missing the comments around the user's code.  User Code starts after \"# --- BEGIN USER CODE ---\" and ends before \"# --- END USER CODE ---\" ");
-
-
-                    }
-                    else
-                    {
-                        this.UserCode = userCode;
-                    }
+                    
+                    scriptData.UserCode = userCode.Trim();
+                    
+                    
                 }
 
                 //
                 //  find the usage() function and parse it out - this gives us the 4 properties in the ParameterItem below
-                if (GetStringBetween(bash, "usage() {", "}", out string bashFragment) == false)
+                if (scriptData.GetStringBetween(bash, "usage() {", "}", out string bashFragment) == false)
                 {
-                    ParseErrorList.Add(bashFragment);
+                    scriptData.ParseErrorList.Add(bashFragment);
 
                 }
                 else
@@ -410,7 +405,7 @@ namespace bashWizardShared
 
                             if (!line.StartsWith("Usage: $0")) // to protect from blank Descriptions
                             {
-                                this.Description = line.TrimEnd();
+                                scriptData.Description = line.TrimEnd();
                             }
                             continue;
                         }
@@ -419,7 +414,7 @@ namespace bashWizardShared
                         {
                             string[] paramTokens = line.Split(new string[] { " ", "|" }, StringSplitOptions.RemoveEmptyEntries);
                             string description = "";
-                            for (int i=3; i<paramTokens.Length; i++)
+                            for (int i = 3; i < paramTokens.Length; i++)
                             {
                                 description += paramTokens[i] + " ";
                             }
@@ -432,7 +427,7 @@ namespace bashWizardShared
                             };
 
 
-                            Parameters.Add(parameterItem);
+                            scriptData.Parameters.Add(parameterItem);
                         }
                     }
                 }
@@ -440,7 +435,7 @@ namespace bashWizardShared
                 //
                 //  parse the echoInput() function to get script name - dont' fail parsing on this one
                 bashFragment = "";
-                if (GetStringBetween(bash, "echoInput() {", "parseInput()", out bashFragment))
+                if (scriptData.GetStringBetween(bash, "echoInput() {", "parseInput()", out bashFragment))
                 {
                     lines = bashFragment.Split('\n');
                     foreach (string l in lines)
@@ -452,9 +447,9 @@ namespace bashWizardShared
                         }
                         //
                         //  the line is in the form of: "echo "<scriptName>:"
-                        if (GetStringBetween(line, "echo \"", ":", out string name))
+                        if (scriptData.GetStringBetween(line, "echo \"", ":", out string name))
                         {
-                            ScriptName = name;
+                            scriptData.ScriptName = name;
                         }
                         break;
                     }
@@ -465,9 +460,9 @@ namespace bashWizardShared
                 //  next parse out the "parseInput" function to get "valueWhenSet" and the "VariableName"
 
                 bashFragment = "";
-                if (GetStringBetween(bash, "eval set -- \"$PARSED\"", "--)", out bashFragment) == false)
+                if (scriptData.GetStringBetween(bash, "eval set -- \"$PARSED\"", "--)", out bashFragment) == false)
                 {
-                    ValidationErrorList.Add(bashFragment);
+                    scriptData.ValidationErrorList.Add(bashFragment);
 
                 }
                 else
@@ -487,20 +482,20 @@ namespace bashWizardShared
                             string[] paramTokens = lines[index + 1].Trim().Split(new char[] { '=' });
                             if (paramTokens.Length != 2)
                             {
-                                ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, encountered the line {lines[index + 1].Trim()} which doesn't parse.  It should look like varName=$2 or the like.");
+                                scriptData.ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, encountered the line {lines[index + 1].Trim()} which doesn't parse.  It should look like varName=$2 or the like.");
 
                             }
                             string[] nameTokens = line.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                             if (nameTokens.Length != 2) // the first is the short param, second long param, and third is empty
                             {
-                                ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, encountered the line {lines[index].Trim()} which doesn't parse.  It should look like \"-l | --long-name)\" or the like.");
+                                scriptData.ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, encountered the line {lines[index].Trim()} which doesn't parse.  It should look like \"-l | --long-name)\" or the like.");
                             }
                             // nameTokens[1] looks like "--long-param)
                             string longParam = nameTokens[1].Substring(3, nameTokens[1].Length - 4);
-                            ParameterItem param = FindParameterByLongName(longParam);
+                            ParameterItem param = scriptData.FindParameterByLongName(longParam);
                             if (param == null)
                             {
-                                ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, found a long parameter named {longParam} which was not found in the usage() function");
+                                scriptData.ParseErrorList.Add($"When parsing the parseInput() function to get the variable names, found a long parameter named {longParam} which was not found in the usage() function");
                             }
                             else
                             {
@@ -516,7 +511,7 @@ namespace bashWizardShared
                                 }
                                 else
                                 {
-                                    ParseErrorList.Add($"When parsing the parseInput() function to see if {param.VariableName} requires input, found this line: {lines[index + 1]} which does not parse.  it should either be \"shift 1\" or \"shift 2\"");
+                                    scriptData.ParseErrorList.Add($"When parsing the parseInput() function to see if {param.VariableName} requires input, found this line: {lines[index + 1]} which does not parse.  it should either be \"shift 1\" or \"shift 2\"");
                                 }
                             }
                             index += 2;
@@ -524,9 +519,9 @@ namespace bashWizardShared
                     }
                 }
                 // the last bit of info to suss out is the default value -- find these with a comment
-                if (GetStringBetween(bash, "# input variables", "parseInput", out bashFragment) == false)
+                if (scriptData.GetStringBetween(bash, "# input variables", "parseInput", out bashFragment) == false)
                 {
-                    ParseErrorList.Add(bashFragment);
+                    scriptData.ParseErrorList.Add(bashFragment);
                 }
                 else
                 {
@@ -548,14 +543,14 @@ namespace bashWizardShared
                         string[] varTokens = line.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
                         if (varTokens.Length == 0 || varTokens.Length > 2)
                         {
-                            ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, the line {line} was encountered that didn't parse.  it should be in the form of varName=Default");
+                            scriptData.ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, the line {line} was encountered that didn't parse.  it should be in the form of varName=Default");
 
                         }
                         string varName = varTokens[0].Trim();
-                        ParameterItem param = FindParameterByVarName(varName);
+                        ParameterItem param = scriptData.FindParameterByVarName(varName);
                         if (param == null)
                         {
-                            ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, found a variable named {varName} which was not found in the usage() function");
+                            scriptData.ParseErrorList.Add($"When parsing the variable declarations between the \"# input variables\" comment and the \"parseInput\" calls, found a variable named {varName} which was not found in the usage() function");
 
                         }
                         else
@@ -567,20 +562,20 @@ namespace bashWizardShared
                 }
 
 
-                return ParseErrorList.Count == 0;
+                return scriptData;
             }
             finally
             {
                 //
                 //  need to update everything that might have been changed by the parse
-                UpdateOnPropertyChanged = true; // force events to fire
-                NotifyPropertyChanged("Description");
-                NotifyPropertyChanged("ScriptName");
+                scriptData.UpdateOnPropertyChanged = true; // force events to fire
+                scriptData.NotifyPropertyChanged("Description");
+                scriptData.NotifyPropertyChanged("ScriptName");
 
 
                 //  "BashScript" also updates the ToggleButtons
-                _doNotGenerateBashScript = false; // setting this hear makes it so we don't generate the script when we change the Description and the Name
-                NotifyPropertyChanged("BashScript");
+                scriptData.GenerateBashScript = true; // setting this here makes it so we don't generate the script when we change the Description and the Name
+                scriptData.NotifyPropertyChanged("BashScript");
 
 
 
