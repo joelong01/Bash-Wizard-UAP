@@ -21,8 +21,15 @@ function echoInfo {
 # make sure this version of *nix supports the right getopt
 ! getopt --test 2>/dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
-	echoError "'getopt --test' failed in this environment.  please install getopt.  If on a mac see http://macappstore.org/gnu-getopt/"
-	exit 1
+	echoError "'getopt --test' failed in this environment.  please install getopt."
+    read -p "install getopt using brew? [y,n]" response
+    if [[ $response == 'y' ]] || [[ $response == 'Y' ]]; then
+        ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+        brew install gnu-getopt
+        echo 'export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"' >> ~/.bash_profile
+        echoWarning "you'll need to restart the shell instance to load the new path"
+    fi
+   exit 1
 fi
 # we have a dependency on jq
 if [[ ! -x "$(command -v jq)" ]]; then

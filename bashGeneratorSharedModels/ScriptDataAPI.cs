@@ -349,7 +349,7 @@ namespace bashWizardShared
                     }
                     else
                     {
-                        scriptData.UserCode = code;
+                        scriptData.UserCode = code.Trim();
                     }
 
                 }
@@ -418,6 +418,7 @@ namespace bashWizardShared
                             {
                                 description += paramTokens[i] + " ";
                             }
+                            description = description.Trim();
                             ParameterItem parameterItem = new ParameterItem()
                             {
                                 ShortParameter = paramTokens[0].Trim(),

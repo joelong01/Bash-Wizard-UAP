@@ -42,10 +42,10 @@ function usage() {
 
     echo "The top level test script for verifying BashWizard"
     echo ""
-    echo "Usage: $0 -i|--input-file -l|--log-directory -c|--create -v|--verify -d|--delete -t|--test-input-file -e|--test-logging -s|--test-create -r|--test-verify -x|--test-delete -o|--load-parse-save -p|--optional-test-parameter " 1>&2
+    echo "Usage: $0 -i|--input-file -l|--log-directory -c|--create -v|--verify -d|--delete -t|--test-input-file -e|--test-logging -s|--test-create -r|--test-verify -x|--test-delete -o|--load-parse-save -p|--optional-test-parameter -b|--bw-dll " 1>&2
     echo ""
-    echo " -i | --input-file                     Optional    filename that contains the JSON values to drive the script.  command line overrides file"
-    echo " -l | --log-directory                  Required    directory for the log file.  the log file name will be based on the script name"
+    echo " -i | --input-file                     Optional    filename that contains the JSON values to drive the script. command line overrides file"
+    echo " -l | --log-directory                  Required    directory for the log file. the log file name will be based on the script name"
     echo " -c | --create                         Optional    creates the resource"
     echo " -v | --verify                         Optional    verifies the script ran correctly"
     echo " -d | --delete                         Optional    deletes whatever the script created"
@@ -55,7 +55,8 @@ function usage() {
     echo " -r | --test-verify                    Optional    tests the --verify flag"
     echo " -x | --test-delete                    Optional    tests the --delete flag"
     echo " -o | --load-parse-save                Optional    parses this script and creates a new one"
-    echo " -p | --optional-test-parameter        Optional    this parameter is used to test in the input file"  
+    echo " -p | --optional-test-parameter        Optional    this parameter is used to test in the input file"
+    echo " -b | --bw-dll                         Required    the full path to bw.dll command line tool for BashWizard"  
     echo ""
     exit 1
 }
@@ -85,13 +86,15 @@ function echoInput() {
     echoInfo "$loadParseSave"
     echo -n "    optional-test-parameter.... "
     echoInfo "$optionalTestParameter"
+    echo -n "    bw-dll..................... "
+    echoInfo "$bwDll"
 
 }
 
 function parseInput() {
     
-    local OPTIONS=i:l:cvdtesrxop:
-    local LONGOPTS=input-file:,log-directory:,create,verify,delete,test-input-file,test-logging,test-create,test-verify,test-delete,load-parse-save,optional-test-parameter:
+    local OPTIONS=i:l:cvdtesrxop:b:
+    local LONGOPTS=input-file:,log-directory:,create,verify,delete,test-input-file,test-logging,test-create,test-verify,test-delete,load-parse-save,optional-test-parameter:,bw-dll:
 
     # -use ! and PIPESTATUS to get exit code with errexit set
     # -temporarily store output to be able to check for errors
@@ -158,6 +161,10 @@ function parseInput() {
             optionalTestParameter=$2
             shift 2
             ;;
+        -b | --bw-dll)
+            bwDll=$2
+            shift 2
+            ;;
         --)
             shift
             break
@@ -182,6 +189,7 @@ declare testVerify=false
 declare testDelete=false
 declare loadParseSave=false
 declare optionalTestParameter=""
+declare bwDll=
 
 parseInput "$@"
 
@@ -204,13 +212,14 @@ if [ "${inputFile}" != "" ]; then
     testDelete=$(echo "${configSection}" | jq '.["test-delete"]' --raw-output)
     loadParseSave=$(echo "${configSection}" | jq '.["load-parse-save"]' --raw-output)
     optionalTestParameter=$(echo "${configSection}" | jq '.["optional-test-parameter"]' --raw-output)
+    bwDll=$(echo "${configSection}" | jq '.["bw-dll"]' --raw-output)
 
 	# we need to parse the again to see if there are any overrides to what is in the config file
 	parseInput "$@"
 fi
 
 #verify required parameters are set
-if [ -z "${logDirectory}" ]; then
+if [ -z "${logDirectory}" ] || [ -z "${bwDll}" ]; then
 	echo ""
 	echoError "Required parameter missing! "
 	echoInput #make it easy to see what is missing
@@ -232,10 +241,7 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 
     echoInput
     # --- BEGIN USER CODE ---
-
-
-
-	# we have a dependency on .net core
+# we have a dependency on .net core
 	echo -n "looking for .net core..."
 	if [[ ! -x "$(command -v dotnet)" ]]; then
 		echoError "'.net core 2.1+ is needed to run this script.  please install it.  see https://docs.microsoft.com/en-us/dotnet/core/linux-prerequisites?tabs=netcore2x"
@@ -250,11 +256,9 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	# that we will run our tests against.
 
 	declare newFileName="$0.2.sh"
-	declare bwDll="../bw/bin/Debug/netcoreapp2.1/publish/bw.dll" #this is the dll that should be built when the Bash-Wizard project is built *after* it is published!
 	if [[ ! -f "$bwDll" ]]; then
-		echoError "$bwDll does not exist. you need to both build *and* publish the bw project in Bash-Wizard"
-        echoError "to publish, right click on the bw project in Bash-Wizard solution and choose 'publish'"
-        echoError "click on 'Configure' and publish self-contained linux-64 binaries"
+		echoError "$bwDll does not exist. please pass a correct DLL"
+        echoError "the DLL can either be built and published, or you can get it from https://github.com/joelong01/Bash-Wizard/Binaries"        
 		exit 0
 	else
 		echoInfo "found $bwDll"
@@ -343,9 +347,6 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	if [[ $loadParseSave == true ]]; then        
 	    rm -f "$newFileName"
 	fi
-
-	
-    
     # --- END USER CODE ---
     time=$(date +"%m/%d/%y @ %r")
     echo "ended: $time"
