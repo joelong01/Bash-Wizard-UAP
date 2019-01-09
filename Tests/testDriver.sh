@@ -256,6 +256,7 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 			echoInfo "found $bwDll"
 			echo "creating new script file $newFileName"
 			dotnet "$bwDll" -p -i "$0" -o "$newFileName"
+            chmod a+x "$newFileName"
 		fi
 	else
 		newFileName=$0
