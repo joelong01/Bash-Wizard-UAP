@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace bashWizardShared
 {
@@ -149,19 +150,20 @@ namespace bashWizardShared
                 }
             }
 
-            if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode") // don't update the BashScript when we are updating the BashScript...
+            if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode" && e.PropertyName != "JSON") // don't update the BashScript when we are updating the BashScript...
             {
-                ToBash();
+                ToBash();                
             }
 
         }
 
         private void Reset()
         {
-            ParseErrorList.Clear();
+            ParseErrors.Clear();
             Parameters.Clear();
             ScriptName = "";
             Description = "";
+            JSON = "";
 
         }
 

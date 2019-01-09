@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace bashWizardShared
 {
+    [JsonObject(MemberSerialization.OptIn)]
     public partial class ScriptData
     {
         private bool _updateProperties = false;
@@ -12,8 +15,9 @@ namespace bashWizardShared
             set => _updateProperties = value;
         }
 
-
+        
         private string _ScriptName = "";
+        [JsonProperty]
         public string ScriptName
         {
             get => _ScriptName;
@@ -44,13 +48,15 @@ namespace bashWizardShared
                     NotifyPropertyChanged("AcceptsInputFile");
                     NotifyPropertyChanged("CreateVerifyDelete");
                     NotifyPropertyChanged("Warnings");
+                    NotifyPropertyChanged("JSON");
                     GenerateBashScript = true;
 
                 }
             }
         }
-
+        [JsonProperty]
         public bool LoggingSupport => ParameterExists("log-directory", "logDirectory");
+        [JsonProperty]
         public bool AcceptsInputFile => ParameterExists("input-file", "inputFile");
 
         public string Warnings
@@ -58,7 +64,7 @@ namespace bashWizardShared
             get
             {
                 string ret = "";
-                foreach (var w in ParseErrorList)
+                foreach (var w in ParseErrors)
                 {
                     ret += w + "\n";
                 }
@@ -74,6 +80,7 @@ namespace bashWizardShared
         /// <summary>
         ///     returns true if the /create /verify and /delete parameters are in the collection
         /// </summary>
+        [JsonProperty]
         public bool CreateVerifyDelete
         {
             get
@@ -105,6 +112,7 @@ namespace bashWizardShared
 
 
         private string _Version = "0.900";
+        [JsonProperty]
         public string Version
         {
             get => _Version;
@@ -119,6 +127,7 @@ namespace bashWizardShared
         }
 
         private string _Description = "";
+        [JsonProperty]
         public string Description
         {
             get => _Description;
@@ -133,6 +142,7 @@ namespace bashWizardShared
         }
 
         private ObservableCollection<ParameterItem> _Parameters = new ObservableCollection<ParameterItem>();
+        [JsonProperty]
         public ObservableCollection<ParameterItem> Parameters
         {
             get => _Parameters;
@@ -187,8 +197,8 @@ namespace bashWizardShared
             }
         }
 
-        private List<string> _parseErrors = new List<string>();
-        private List<string> ParseErrorList
+        private ObservableCollection<string> _parseErrors = new ObservableCollection<string>();
+        public ObservableCollection<string> ParseErrors
         {
             get => _parseErrors;
             set
@@ -200,21 +210,24 @@ namespace bashWizardShared
                 }
             }
         }
-
-        public string ParseErrors
+        string _json = "";
+        public string JSON
         {
             get
             {
-                string ret = "Parse Errors\n============\n";
-                for (int i = 0; i < ParseErrorList.Count; i++)
+                return _json;
+            }
+            set
+            {
+              //  Debug.WriteLine($"JSON.set: {value}");
+                if (_json != value)
                 {
-                    ret += $"{i + 1}. {ParseErrorList[i]}\n";
+                    _json = value;                    
+                    NotifyPropertyChanged();
                 }
-                return ret;
             }
         }
 
-        public string AllErrors => ParseErrors + ValidationErrors;
 
     }
 

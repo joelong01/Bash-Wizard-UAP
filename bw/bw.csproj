@@ -6,6 +6,14 @@
     <RootNamespace>BashWizardConsole</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>;3277;</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>;3277;</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Resources\sample.json" />
     <None Remove="Resources\usage.txt" />
