@@ -8,12 +8,32 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{92300413-DF06-4F87-80A6-5C3E4A7EF4C8}"
 	ProjectSection(SolutionItems) = preProject
 		Tests\installDotNetUbuntuForWindows.sh = Tests\installDotNetUbuntuForWindows.sh
+		Tests\macGetOptInstall.sh = Tests\macGetOptInstall.sh
+		Tests\testDriver.json = Tests\testDriver.json
 		Tests\testDriver.sh = Tests\testDriver.sh
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bashWizardLib", "bashGeneratorSharedModels\bashWizardLib.csproj", "{49D95E8B-8B6C-4F9E-BA5E-E7AB2E2D36B5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "bw", "bw\bw.csproj", "{0332DA38-D1F7-4FB1-BA35-F6F73FD9D60D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{097C69B4-CBFB-4656-96A6-CD000660F786}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Binaries", "Binaries", "{0A76E57B-9A3C-4259-ABC2-E94F0EF0686E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mac", "Mac", "{90069B38-2551-40D8-8AAF-1A0F7AFDFAB6}"
+	ProjectSection(SolutionItems) = preProject
+		Binaries\Mac\bashWizardLib.dll = Binaries\Mac\bashWizardLib.dll
+		Binaries\Mac\bashWizardLib.pdb = Binaries\Mac\bashWizardLib.pdb
+		Binaries\Mac\bw.deps.json = Binaries\Mac\bw.deps.json
+		Binaries\Mac\bw.dll = Binaries\Mac\bw.dll
+		Binaries\Mac\bw.pdb = Binaries\Mac\bw.pdb
+		Binaries\Mac\bw.runtimeconfig.json = Binaries\Mac\bw.runtimeconfig.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -84,6 +104,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{90069B38-2551-40D8-8AAF-1A0F7AFDFAB6} = {0A76E57B-9A3C-4259-ABC2-E94F0EF0686E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {94248F20-4FCD-4074-8D9D-F336CC10D249}

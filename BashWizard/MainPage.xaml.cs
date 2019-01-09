@@ -13,6 +13,7 @@ using Windows.UI.Popups;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -125,7 +126,7 @@ namespace BashWizard
                     ApplicationView appView = ApplicationView.GetForCurrentView();
                     appView.Title = $"{_fileBashWizard.Name}";
                     ScriptData.ScriptName = _fileBashWizard.Name;
-                    ScriptData.FromBash(s);
+                    this.ScriptData = ScriptData.FromBash(s);
                 }
 
             }
@@ -299,7 +300,7 @@ namespace BashWizard
                     {
 
                     }
-                    await FileIO.WriteTextAsync(_fileBashWizard, ScriptData.BashScript.Replace("\r", ""));
+                    await FileIO.WriteTextAsync(_fileBashWizard, ScriptData.BashScript.Replace("\r", "\n"));
                 }
             }
             catch (Exception e)
@@ -353,14 +354,15 @@ namespace BashWizard
 
             string bash = ScriptData.BashScript;
             Reset();
-            if (ScriptData.FromBash(bash) == false)
-            {
-                ScriptData.BashScript = ScriptData.ParseErrors;
-            }
-            else
-            {
-                ScriptData.ToBash();
-            }
+            this.ScriptData = ScriptData.FromBash(bash);
+            //if (ScriptData.FromBash(bash) == false)
+            //{
+            //    ScriptData.BashScript = ScriptData.ParseErrors;
+            //}
+            //else
+            //{
+            //    ScriptData.ToBash();
+            //}
         }
 
         /// <summary>
@@ -443,6 +445,32 @@ namespace BashWizard
             };
 
             var result = await dialog.ShowAsync();
+        }
+
+        private void OnShowWarnings(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ToggleButton btn = sender as ToggleButton;
+                if (txt_Bash.Visibility == Visibility.Visible)
+                {
+                    txt_Bash.Visibility = Visibility.Collapsed;
+                    txt_Warnings.Visibility = Visibility.Visible;
+                    btn.IsChecked = true;
+                    
+                }
+                else
+                {
+                    txt_Bash.Visibility = Visibility.Visible;
+                    txt_Warnings.Visibility = Visibility.Collapsed;
+                    btn.IsChecked = false;
+                }
+                
+            }
+            finally
+            {
+                splitView.IsPaneOpen = false;
+            }
         }
     }
 }

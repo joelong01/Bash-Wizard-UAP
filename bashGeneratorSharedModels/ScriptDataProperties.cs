@@ -39,18 +39,37 @@ namespace bashWizardShared
                     NotifyPropertyChanged();
                     //
                     //  whever the bash script changes, we might have changed one of these parameters...
-                    _doNotGenerateBashScript = true;
+                    GenerateBashScript = false;
                     NotifyPropertyChanged("LoggingSupport");
                     NotifyPropertyChanged("AcceptsInputFile");
                     NotifyPropertyChanged("CreateVerifyDelete");
-                    _doNotGenerateBashScript = false;
-                    
+                    NotifyPropertyChanged("Warnings");
+                    GenerateBashScript = true;
+
                 }
             }
         }
 
         public bool LoggingSupport => ParameterExists("log-directory", "logDirectory");
         public bool AcceptsInputFile => ParameterExists("input-file", "inputFile");
+
+        public string Warnings
+        {
+            get
+            {
+                string ret = "";
+                foreach (var w in ParseErrorList)
+                {
+                    ret += w + "\n";
+                }
+                if (ret == "")
+                {
+                    ret = "No Warnings!";
+                }
+
+                return ret;
+            }
+        }
 
         /// <summary>
         ///     returns true if the /create /verify and /delete parameters are in the collection
