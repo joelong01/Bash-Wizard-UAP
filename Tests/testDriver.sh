@@ -333,7 +333,7 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	fi
     #if we created a new file, remove it
 	if [[ $loadParseSave == true ]]; then
-		rm -f "$newFileName"
+    	rm -f "$newFileName"
 	fi
     # --- END USER CODE ---
     time=$(date +"%m/%d/%y @ %r")
