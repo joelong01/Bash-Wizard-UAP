@@ -22,7 +22,7 @@ function echoInfo {
 ! getopt --test 2>/dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echoError "'getopt --test' failed in this environment.  please install getopt."
-    read -p "install getopt using brew? [y,n]" response
+    read -r -p "install getopt using brew? [y,n]" response
     if [[ $response == 'y' ]] || [[ $response == 'Y' ]]; then
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
         brew install gnu-getopt

@@ -110,7 +110,12 @@ namespace bashWizardShared
             {
                 if (_Default != value)
                 {
-                    _Default = value;
+                    _Default = value.Trim();
+                    if (_Default != "")
+                    {
+                        _Required = false;
+                    }
+                    
                     NotifyPropertyChanged();
                 }
             }
@@ -126,6 +131,11 @@ namespace bashWizardShared
                 {
                     _Required = value;
                     NotifyPropertyChanged();
+                    if (_Required)
+                    {
+                        Default = ""; // you can't have a default and be required because it will always have a value
+                    }
+
                 }
             }
         }

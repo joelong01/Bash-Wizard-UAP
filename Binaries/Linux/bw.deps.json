@@ -1,0 +1,37 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v2.1/linux-x64",
+    "signature": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v2.1": {},
+    ".NETCoreApp,Version=v2.1/linux-x64": {
+      "bw/1.0.0": {
+        "dependencies": {
+          "bashWizardLib": "1.0.0"
+        },
+        "runtime": {
+          "bw.dll": {}
+        }
+      },
+      "bashWizardLib/1.0.0": {
+        "runtime": {
+          "bashWizardLib.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "bw/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "bashWizardLib/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

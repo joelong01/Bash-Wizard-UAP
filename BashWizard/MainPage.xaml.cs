@@ -300,7 +300,7 @@ namespace BashWizard
                     {
 
                     }
-                    await FileIO.WriteTextAsync(_fileBashWizard, ScriptData.BashScript.Replace("\r", ""));
+                    await FileIO.WriteTextAsync(_fileBashWizard, ScriptData.BashScript.Replace("\r", "\n"));
                 }
             }
             catch (Exception e)

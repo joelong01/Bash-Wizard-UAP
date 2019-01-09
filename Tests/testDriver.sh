@@ -22,7 +22,7 @@ function echoInfo {
 ! getopt --test 2>/dev/null
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echoError "'getopt --test' failed in this environment.  please install getopt."
-    read -p "install getopt using brew? [y,n]" response
+    read -r -p "install getopt using brew? [y,n]" response
     if [[ $response == 'y' ]] || [[ $response == 'Y' ]]; then
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
         brew install gnu-getopt
@@ -45,7 +45,7 @@ function usage() {
     echo "Usage: $0 -i|--input-file -l|--log-directory -c|--create -v|--verify -d|--delete -t|--test-input-file -e|--test-logging -s|--test-create -r|--test-verify -x|--test-delete -o|--load-parse-save -p|--optional-test-parameter -b|--bw-dll " 1>&2
     echo ""
     echo " -i | --input-file                     Optional    filename that contains the JSON values to drive the script. command line overrides file"
-    echo " -l | --log-directory                  Required    directory for the log file. the log file name will be based on the script name"
+    echo " -l | --log-directory                  Optional    directory for the log file. the log file name will be based on the script name"
     echo " -c | --create                         Optional    creates the resource"
     echo " -v | --verify                         Optional    verifies the script ran correctly"
     echo " -d | --delete                         Optional    deletes whatever the script created"
@@ -56,7 +56,7 @@ function usage() {
     echo " -x | --test-delete                    Optional    tests the --delete flag"
     echo " -o | --load-parse-save                Optional    parses this script and creates a new one"
     echo " -p | --optional-test-parameter        Optional    this parameter is used to test in the input file"
-    echo " -b | --bw-dll                         Required    the full path to bw.dll command line tool for BashWizard"  
+    echo " -b | --bw-dll                         Optional    the full path to bw.dll command line tool for BashWizard"  
     echo ""
     exit 1
 }
@@ -178,7 +178,7 @@ function parseInput() {
 }
 # input variables 
 declare inputFile=
-declare logDirectory="./Logs"
+declare logDirectory=./logs
 declare create=false
 declare verify=false
 declare delete=false
@@ -218,15 +218,6 @@ if [ "${inputFile}" != "" ]; then
 	parseInput "$@"
 fi
 
-#verify required parameters are set
-if [ -z "${logDirectory}" ] || [ -z "${bwDll}" ]; then
-	echo ""
-	echoError "Required parameter missing! "
-	echoInput #make it easy to see what is missing
-	echo ""
-	usage
-	exit 2
-fi
 
 #logging support
 declare LOG_FILE="${logDirectory}testDriver.sh.log"
@@ -245,29 +236,27 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	echo -n "looking for .net core..."
 	if [[ ! -x "$(command -v dotnet)" ]]; then
 		echoError "'.net core 2.1+ is needed to run this script.  please install it.  see https://docs.microsoft.com/en-us/dotnet/core/linux-prerequisites?tabs=netcore2x"
-        echoError "if running Windows, this will likely work: curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS"
-        echoError "but you will have to edit ~./profile to add .net to your path"
+		echoError "if running Windows, this will likely work: curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS"
+		echoError "but you will have to edit ~./profile to add .net to your path"
 		echoError "aftwards make sure dotnet.exe is in the path"
-        echoError "if you are on a mac, you porbably want to add a symbolic link by running this: n -s /usr/local/share/dotnet/dotnet /usr/local/bin/"
+		echoError "if you are on a mac, you porbably want to add a symbolic link by running this: n -s /usr/local/share/dotnet/dotnet /usr/local/bin/"
 		exit 1
 	fi
 	echoInfo "found it!"
 	# first we use the BashWizard bw.dll to read this and parse this file and then create a new bash file
 	# that we will run our tests against.
 
-	declare newFileName="$0.2.sh"
-	if [[ ! -f "$bwDll" ]]; then
-		echoError "$bwDll does not exist. please pass a correct DLL"
-        echoError "the DLL can either be built and published, or you can get it from https://github.com/joelong01/Bash-Wizard/Binaries"        
-		exit 0
-	else
-		echoInfo "found $bwDll"
-	fi
-
-	# if we need to test verify,create, delete we load/parse/save this script
-	if [[ $loadParseSave == true ]]; then
-        echo "creating new script file $newFileName"
-		dotnet $bwDll -p -i "$0" -o "$newFileName"
+	if [[ "$loadParseSave" == true ]]; then
+		declare newFileName="$0.2.sh"
+		if [[ ! -f "$bwDll" ]]; then
+			echoError "$bwDll does not exist. please pass a correct DLL"
+			echoError "the DLL can either be built and published, or you can get it from https://github.com/joelong01/Bash-Wizard/Binaries"
+			exit 0
+		else
+			echoInfo "found $bwDll"
+			echo "creating new script file $newFileName"
+			dotnet "$bwDll" -p -i "$0" -o "$newFileName"
+		fi
 	else
 		newFileName=$0
 	fi
@@ -318,14 +307,14 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 		fi
 	fi
 
-    if [[ $testInputFile == true ]]; then
-        echo "Testing Input File"
-        if [[ $optionalTestParameter == "Verify Test Parameter" ]]; then            
-            echoInfo "PASSED"
-        else
-            echoError "FAILED: optional test parameter value: $optionalTestParameter.  Expected 'Verify Test Parameter"
-        fi
-    fi
+	if [[ $testInputFile == true ]]; then
+		echo "Testing Input File"
+		if [[ $optionalTestParameter == "Verify Test Parameter" ]]; then
+			echoInfo "PASSED"
+		else
+			echoError "FAILED: optional test parameter value: $optionalTestParameter.  Expected 'Verify Test Parameter"
+		fi
+	fi
 
 	#
 	#   the order matters - delete, then create, then verify
@@ -342,10 +331,9 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 	if [[ $verify == "true" ]]; then
 		onVerify
 	fi
-
-
-	if [[ $loadParseSave == true ]]; then        
-	    rm -f "$newFileName"
+    #if we created a new file, remove it
+	if [[ $loadParseSave == true ]]; then
+		rm -f "$newFileName"
 	fi
     # --- END USER CODE ---
     time=$(date +"%m/%d/%y @ %r")
