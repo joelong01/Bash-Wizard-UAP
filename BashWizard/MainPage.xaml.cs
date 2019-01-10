@@ -32,7 +32,9 @@ namespace BashWizard
 
 
         private ParameterItem _selectedItem = null;
-        private StorageFile _fileBashWizard = null;
+
+        private StorageFile _bashFile = null;
+        private StorageFile _jsonFile = null;
 
         public static readonly DependencyProperty ScriptDataProperty = DependencyProperty.Register("ScriptData", typeof(ScriptData), typeof(MainPage), null);
         public ScriptData ScriptData
@@ -102,6 +104,7 @@ namespace BashWizard
 
         private async void OnOpen(object sender, RoutedEventArgs e)
         {
+            StorageFile file = null;
             try
             {
 
@@ -113,35 +116,67 @@ namespace BashWizard
 
                 };
 
-                picker.FileTypeFilter.Add(".sh");
-                _fileBashWizard = await picker.PickSingleFileAsync();
-                if (_fileBashWizard != null)
+                if (JSONShown)
+                {
+                    picker.FileTypeFilter.Add(".json");
+                    picker.FileTypeFilter.Add(".bw");
+                    _jsonFile = await picker.PickSingleFileAsync();
+                    file = _jsonFile;
+                }
+                else
+                {
+
+                    picker.FileTypeFilter.Add(".sh");
+                    _bashFile = await picker.PickSingleFileAsync();
+                    file = _bashFile;
+                }
+
+                if (file != null)
                 {
                     ScriptData = new ScriptData();
-                    IBuffer buffer = await FileIO.ReadBufferAsync(_fileBashWizard);
+                    IBuffer buffer = await FileIO.ReadBufferAsync(file);
                     DataReader reader = DataReader.FromBuffer(buffer);
                     byte[] fileContent = new byte[reader.UnconsumedBufferLength];
                     reader.ReadBytes(fileContent);
                     string s = Encoding.UTF8.GetString(fileContent, 0, fileContent.Length);
                     ApplicationView appView = ApplicationView.GetForCurrentView();
-                    appView.Title = $"{_fileBashWizard.Name}";
-                    ScriptData.ScriptName = _fileBashWizard.Name;
-                    this.ScriptData = ScriptData.FromBash(s);
+                    appView.Title = $"{file.Name}";
+                    ScriptData.ScriptName = file.Name;
+                    if (s[0] == '{' && !JSONShown)
+                    {
+                        //
+                        //  looks like they opened a JSON file instead of a BASH Script...
+                        // 
+                        _jsonFile = file;
+                        _bashFile = null;
+                        this.ScriptData = ScriptData.FromJson(s, "");
+                    }
+                    else if (s[0] != '#' && !JSONShown)
+                    {
+                        //
+                        //  JSON is shown and they opened a Bash Script....
+                        _bashFile = file;
+                        _jsonFile = null;
+                        this.ScriptData = ScriptData.FromBash(s);
+
+                    }
+                    else
+                    {
+                        this.ScriptData = JSONShown ? ScriptData.FromJson(s, "") : this.ScriptData = ScriptData.FromBash(s);
+                    }
                 }
 
             }
             catch (Exception ex)
             {
-                ScriptData.BashScript = "Error: " + ex.Message;
-                _fileBashWizard = null;
+                ScriptData.ParseErrors.Add($"Error loading file {((file == null) ? "" : file.Name)}");
+                ScriptData.ParseErrors.Add($"Exception: {ex.Message}");
+                _bashFile = null;
             }
             finally
             {
 
-                if (_fileBashWizard != null)
-                {
-                    ScriptData.ToBash();
-                }
+
 
             }
         }
@@ -253,24 +288,32 @@ namespace BashWizard
         private async void OnSaveAs(object sender, RoutedEventArgs e)
         {
             ScriptData.ToBash();
-            if (ScriptData.ScriptName == "")
-            {
-                ScriptData.BashScript = "You must specify a script name";
-                return;
-            }
+            StorageFile file = null;
             FileSavePicker savePicker = new FileSavePicker
             {
                 SuggestedStartLocation =
-                PickerLocationId.DocumentsLibrary
+                PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = $"{ScriptData.ScriptName}"
             };
-            savePicker.FileTypeChoices.Add("Shell Scripts", new List<string>() { ".sh" });
-            savePicker.SuggestedFileName = $"{ScriptData.ScriptName}";
-            _fileBashWizard = await savePicker.PickSaveFileAsync();
-            if (_fileBashWizard != null)
+            if (JSONShown)
+            {
+                savePicker.FileTypeChoices.Add("JSON files", new List<string>() { ".json" });
+                _jsonFile = await savePicker.PickSaveFileAsync();
+                file = _jsonFile;
+            }
+            else
+            {
+                savePicker.FileTypeChoices.Add("Shell Scripts", new List<string>() { ".sh" });
+                _bashFile = await savePicker.PickSaveFileAsync();
+                file = _bashFile;
+            }
+
+
+            if (file != null)
             {
                 if (ScriptData.ScriptName == null)
                 {
-                    ScriptData.ScriptName = _fileBashWizard.Name;
+                    ScriptData.ScriptName = file.Name;
                 }
             }
             await Save();
@@ -279,14 +322,22 @@ namespace BashWizard
 
         private async void OnSave(object sender, RoutedEventArgs e)
         {
-            if (_fileBashWizard == null)
+
+
+
+            if (_jsonFile == null && JSONShown)
             {
                 OnSaveAs(sender, e);
+                return;
             }
-            else
+            else if (_bashFile == null && !JSONShown)
             {
-                await Save();
+                OnSaveAs(sender, e);
+                return;
             }
+
+            await Save();
+            
 
         }
 
@@ -294,18 +345,24 @@ namespace BashWizard
         {
             try
             {
-                if (_fileBashWizard != null)
+                if (_jsonFile != null)
                 {
-                    if (ScriptData.ScriptName == "")
-                    {
-
-                    }
-                    await FileIO.WriteTextAsync(_fileBashWizard, ScriptData.BashScript.Replace("\r", "\n"));
+                    await FileIO.WriteTextAsync(_jsonFile, ScriptData.BashScript.Replace("\r", "\n"));
+                    Debug.WriteLine($"saving JSON file {_jsonFile.Name}");
                 }
+
+                if (_bashFile != null)
+                {
+
+                    Debug.WriteLine($"saving bash file {_bashFile.Name}");
+                    await FileIO.WriteTextAsync(_bashFile, ScriptData.BashScript.Replace("\r", "\n"));
+                }
+
             }
             catch (Exception e)
             {
-                Debug.WriteLine("Exception saving file: " + e.Message);
+                ScriptData.ParseErrors.Add("Error saving file");
+                ScriptData.ParseErrors.Add("Exception saving file: " + e.Message);
             }
 
         }
@@ -322,7 +379,7 @@ namespace BashWizard
 
 
 
-        
+
 
 
         private void LongName_TextBox_LostFocus(object sender, RoutedEventArgs e)
@@ -347,22 +404,55 @@ namespace BashWizard
 
 
 
-        private void OnParseBashScript(object sender, RoutedEventArgs e)
+        /// <summary>
+        ///     Refresh menu item.
+        ///     check to see which PivotItem is active.  if it is the JSON one, then parse the JSON and create the bash script.
+        ///     otherwise parse the bash script
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnRefresh(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                ((Button)sender).IsEnabled = false;
 
+                if (JSONShown)
+                {
+                    this.ScriptData = ScriptData.FromJson(this.ScriptData.JSON, this.ScriptData.UserCode);
+                    return;
+                }
+                else
+                {
 
+                    string bash = ScriptData.BashScript;
+                    this.ScriptData = ScriptData.FromBash(bash);
+                }
+            }
+            finally
+            {
+                ((Button)sender).IsEnabled = true;
+            }
+        }
 
-            string bash = ScriptData.BashScript;
-            Reset();
-            this.ScriptData = ScriptData.FromBash(bash);
-            //if (ScriptData.FromBash(bash) == false)
-            //{
-            //    ScriptData.BashScript = ScriptData.ParseErrors;
-            //}
-            //else
-            //{
-            //    ScriptData.ToBash();
-            //}
+        /// <summary>
+        ///     returns True if the JSON TextBox is the current Pivot Item, otherwise returns False
+        /// </summary>
+        private bool JSONShown
+        {
+            get
+            {
+                if (!(_Pivot.SelectedItem is PivotItem itm))
+                {
+                    throw new Exception("There is no way that this could not be a PivotItem!");
+                }
+
+                if (itm.Name == "PI_JSON")
+                {
+                    return true;
+                }
+                return false;
+            }
         }
 
         /// <summary>
@@ -434,13 +524,15 @@ namespace BashWizard
             dialog.Content = panel;
             dialog.PrimaryButtonText = "Copy";
             dialog.IsPrimaryButtonEnabled = true;
-            dialog.PrimaryButtonClick += delegate {
+            dialog.PrimaryButtonClick += delegate
+            {
                 DataPackage dataPackage = new DataPackage();
                 dataPackage.SetText(tb.Text);
                 Clipboard.SetContent(dataPackage);
             };
             dialog.SecondaryButtonText = "Close";
-            dialog.SecondaryButtonClick += delegate {
+            dialog.SecondaryButtonClick += delegate
+            {
                 dialog.Hide();
             };
 
@@ -457,7 +549,7 @@ namespace BashWizard
                     txt_Bash.Visibility = Visibility.Collapsed;
                     txt_Warnings.Visibility = Visibility.Visible;
                     btn.IsChecked = true;
-                    
+
                 }
                 else
                 {
@@ -465,7 +557,7 @@ namespace BashWizard
                     txt_Warnings.Visibility = Visibility.Collapsed;
                     btn.IsChecked = false;
                 }
-                
+
             }
             finally
             {

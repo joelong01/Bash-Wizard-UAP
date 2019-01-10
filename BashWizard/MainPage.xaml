@@ -255,24 +255,14 @@
                         </Button.Content>
                     </Button>
 
-                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnParseBashScript" ToolTipService.ToolTip="VS Code Debug Config" Margin="0,50, 0,0" >
+                    <Button Background="Transparent" HorizontalAlignment="Left" Click="OnRefresh" ToolTipService.ToolTip="VS Code Debug Config" Margin="0,50, 0,0" >
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <SymbolIcon  Symbol="Sync" />
-                                <TextBlock Text="Parse Script" Margin="24,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Refresh" Margin="24,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button.Content>
                     </Button>
-
-                    <ToggleButton Background="Transparent" HorizontalAlignment="Left" Click="OnShowWarnings" ToolTipService.ToolTip="Show Warnings" Margin="0,50, 0,0" >
-                        <ToggleButton.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <SymbolIcon  Symbol="Important" />
-                                <TextBlock Text="Toggle Show Warnings" Margin="24,0,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </ToggleButton.Content>
-                    </ToggleButton>
-
                 </StackPanel>
 
             </Grid>
@@ -339,12 +329,20 @@
                     </Style>
                 </ListView.ItemContainerStyle>
             </ListView>
-            <TextBox Name="txt_Bash" Text="{x:Bind ScriptData.BashScript, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" GotFocus="Text_GotFocus"/>
-
-            <TextBox Visibility="Collapsed" Name="txt_Warnings" Text="{x:Bind ScriptData.Warnings, Mode=OneWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" GotFocus="Text_GotFocus"/>
-
+            <Pivot Name="_Pivot" Grid.Column="2" Grid.Row="3" SelectedIndex="0">
+                <PivotItem x:Name="PI_Bash" Header="Bash Script">
+                    <TextBox Name="txt_Bash" Text="{x:Bind ScriptData.BashScript, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" />
+                </PivotItem>
+                <PivotItem x:Name="PI_JSON"  Header="JSON">
+                    <TextBox Visibility="Visible" Name="txt_JSON" Text="{x:Bind ScriptData.JSON, Mode=TwoWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False"/>
+                </PivotItem>
+                <PivotItem x:Name="PI_Warnings" Header="{x:Bind ScriptData.ParseErrors, Converter={StaticResource WarningCountConverter}, ConverterParameter=Warnings, Mode=OneWay, FallbackValue=Warnings}">
+                    <TextBox Visibility="Visible" Name="txt_Warnings" Text="{x:Bind ScriptData.ParseErrors, Converter={StaticResource ParseWarningToTextConverter}, Mode=OneWay}" Style="{StaticResource KvpTextBox}" FontFamily="Courier New" VerticalAlignment="Stretch" AcceptsReturn="True" Grid.Column="2" Grid.Row="3" IsSpellCheckEnabled="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Background="Black" Foreground="White" FocusVisualPrimaryBrush="Black" FontSize="12" IsColorFontEnabled="False" />
+                </PivotItem>
+            </Pivot>
         </Grid>
     </SplitView>
 </Page>

@@ -23,5 +23,10 @@
             <Setter Property="TextAlignment" Value="Left" />
             <Setter Property="IsSpellCheckEnabled"  Value="False" />
         </Style>
+
+        <local:ParseWarningToTextConverter x:Key="ParseWarningToTextConverter" />
+        <local:ListCountPlusStringConverter x:Key="WarningCountConverter" />
+
+        
     </Application.Resources>
 </Application>
