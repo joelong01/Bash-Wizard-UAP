@@ -176,7 +176,21 @@ namespace BashWizard
             finally
             {
 
-
+                if (ScriptData.ParseErrors.Count > 0)
+                {
+                    _Pivot.SelectedIndex = 2;
+                }
+                else if (_Pivot.SelectedIndex == 2)
+                {
+                    if (ScriptData.BashScript.Length > 0)
+                    {
+                        _Pivot.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        _Pivot.SelectedIndex = 1;
+                    }
+                }
 
             }
         }
