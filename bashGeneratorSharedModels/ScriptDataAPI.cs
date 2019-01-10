@@ -357,10 +357,20 @@ namespace bashWizardShared
             try
             {
 
+               
                 scriptData.UpdateOnPropertyChanged = false; // this flag stops the NotifyPropertyChanged events from firing
                 scriptData.GenerateBashScript = true;  // this flag tells everything that we are in the process of parsing
                 bash = bash.Replace("\r", "\n");
                 bash = bash.Replace("\n\n", "\n");
+
+                //
+                // make sure the file doesn't have GIT merge conflicts
+                if (bash.IndexOf("<<<<<<< HEAD") != -1)
+                {
+                    scriptData.ParseErrors.Add("Bash Script has \"<<<<<<< HEAD\" string in it, indicating an unmerged GIT file.  fix merge before opening.");
+                    return scriptData;
+                }
+
 
                 //
                 //  first look for the bash version
@@ -369,7 +379,7 @@ namespace bashWizardShared
                 double userBashVersion = 0.1;
                 string[] lines = null;
                 string line = "";
-                int count = 0;
+                bool foundDescription = false;
                 if (index > 0)
                 {
                     bool ret = double.TryParse(bash.Substring(index + versionLine.Length, 5), out userBashVersion);
@@ -428,7 +438,7 @@ namespace bashWizardShared
                     bashFragment = bashFragment.Replace("\n", "");
                     lines = bashFragment.Split(new string[] { "echo ", "\"" }, StringSplitOptions.RemoveEmptyEntries);
                     line = "";
-                    count = 0;
+                  
                     foreach (string l in lines)
                     {
                         line = l.Trim();
@@ -441,17 +451,37 @@ namespace bashWizardShared
                             break;
                         }
 
-                        count++;
-                        if (count == 2)
+                       
+                        if (!foundDescription)
                         {
-                            //
-                            //  we write a Warning line, then the description, then instructions
-                            //  strip trailing quote and spaces
+                            /*
+                              it look like:
 
-                            if (!line.StartsWith("Usage: $0")) // to protect from blank Descriptions
+                             function usage() {
+                             *  echoWarning
+                             *  echo "<description>"
+                             *  ...
+                             * 
+                             * }
+                             *
+                             * but the echoWarning isn't always there -- only if the --input-file option was specified.
+                             * 
+                             */
+                            if (line.StartsWith("Parameters can be passed in the command line or in the input file."))
+                            {
+                                continue;
+                            }
+                            //
+                            //  if the description is black, the next line echos the usage -- so if we do NOT find the Usage statement
+                            //  we have found the description.  and in any case, if the Description isn't there by now, it isn't there
+                            //  so always set the flag saying we found it.
+
+                            if (!line.StartsWith("Usage: $0"))
                             {
                                 scriptData.Description = line.TrimEnd();
                             }
+                            
+                            foundDescription = true;
                             continue;
                         }
 

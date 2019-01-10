@@ -24,6 +24,7 @@ namespace BashWizardConsole
                 new Parameter("InputFile", "-i", "--input-file", true, "", false,"Required when passing --parse-and-create.  Represents the input bash file"),
                 new Parameter("OutputFile", "-o", "--output-file", true, "", true,"Required when passing --parse-and-create.  Represents the input bash file"),
                 new Parameter("VSCodeDebugInfo", "-d", "--vs-code-debug-info", true, "", false, "Outputs the JSON config needed for the VS Code Bash Debug extention"),
+                new Parameter("Update", "-u", "--update", false, "", false, "opens --input-file and writes --output-file as the new Bash Wizard version"),
                 new Parameter("Help", "-h", "--help", false, "", false,"Prints the help")
             };
 
@@ -112,6 +113,20 @@ namespace BashWizardConsole
                 EchoHelp(parameters);
             }
 
+            if (input.IsFlagSet("Update"))
+            {
+                LoadAndSave(input.GetValue("InputFile"), input.GetValue("OutputFile"));
+            }
+
+        }
+
+        private static void LoadAndSave(string input, string output)
+        {
+            Console.WriteLine($"updating {input}");
+            string oldBash = System.IO.File.ReadAllText(input);
+            ScriptData data = ScriptData.FromBash(oldBash);
+            File.WriteAllText(output, data.BashScript);
+            
         }
 
         private static (int maxLongParam, int maxDescription) GetLongestParameter(Parameter[] parameters)

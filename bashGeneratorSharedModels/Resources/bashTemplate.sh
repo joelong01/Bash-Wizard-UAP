@@ -1,5 +1,6 @@
 ﻿#!/bin/bash
-# bashWizard version 0.901
+# bashWizard version 0.904
+#shellcheck disable=SC2154
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
 # this will make the error text stand out in red - if you are looking at these errors/warnings in the log file
 # you can use cat <logFile> to see the text in color.
@@ -26,6 +27,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     if [[ $response == 'y' ]] || [[ $response == 'Y' ]]; then
         ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
         brew install gnu-getopt
+        #shellcheck disable=SC2016
         echo 'export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"' >> ~/.bash_profile
         echoWarning "you'll need to restart the shell instance to load the new path"
     fi
@@ -37,9 +39,7 @@ if [[ ! -x "$(command -v jq)" ]]; then
 	exit 1
 fi
 function usage() {
-
     __USAGE_INPUT_STATEMENT__
-
 __USAGE_LINE__ 1>&2
 __USAGE__  
     echo ""
