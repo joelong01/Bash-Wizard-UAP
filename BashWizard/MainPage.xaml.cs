@@ -13,7 +13,6 @@ using Windows.UI.Popups;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
 
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -169,8 +168,8 @@ namespace BashWizard
             }
             catch (Exception ex)
             {
-                ScriptData.ParseErrors.Add($"Error loading file {((file == null) ? "" : file.Name)}");
-                ScriptData.ParseErrors.Add($"Exception: {ex.Message}");
+                ScriptData.ParseErrors.Add(new ParseErrorInfo(ErrorLevel.Fatal, $"Error loading file {((file == null) ? "" : file.Name)}"));
+                ScriptData.ParseErrors.Add(new ParseErrorInfo(ErrorLevel.Fatal, $"Exception: {ex.Message}"));
                 _bashFile = null;
             }
             finally
@@ -301,6 +300,17 @@ namespace BashWizard
 
         private async void OnSaveAs(object sender, RoutedEventArgs e)
         {
+            if (await ValidateAndPrompt() == false)
+            {
+                return;
+            }
+            await SaveAs();
+
+        }
+
+        private async Task SaveAs()
+        {
+            
             ScriptData.ToBash();
             StorageFile file = null;
             FileSavePicker savePicker = new FileSavePicker
@@ -331,27 +341,47 @@ namespace BashWizard
                 }
             }
             await Save();
+        }
 
+        private async Task<bool> ValidateAndPrompt()
+        {
+            if (ScriptData.HasValidationErrors)
+            {
+                var dialog = new MessageDialog("This Bash File has Validation errors and won't execute correctly.  Are you sure you want to save it?", "Bash Wizard");
+                dialog.Commands.Add(new UICommand { Label = "Yes", Id = 0 });
+                dialog.Commands.Add(new UICommand { Label = "No", Id = 1 });
+                IUICommand ret = await dialog.ShowAsync();
+                if ((int)ret.Id == 0)
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            return true;
         }
 
         private async void OnSave(object sender, RoutedEventArgs e)
         {
 
-
+            if (await ValidateAndPrompt() == false)
+            {
+                return;
+            }
 
             if (_jsonFile == null && JSONShown)
             {
-                OnSaveAs(sender, e);
+                await SaveAs();
                 return;
             }
             else if (_bashFile == null && !JSONShown)
             {
-                OnSaveAs(sender, e);
+                await SaveAs();
                 return;
             }
 
             await Save();
-            
+
 
         }
 
@@ -375,26 +405,18 @@ namespace BashWizard
             }
             catch (Exception e)
             {
-                ScriptData.ParseErrors.Add("Error saving file");
-                ScriptData.ParseErrors.Add("Exception saving file: " + e.Message);
+                ScriptData.ParseErrors.Add(new ParseErrorInfo(ErrorLevel.Warning, "Error saving file"));
+                ScriptData.ParseErrors.Add(new ParseErrorInfo(ErrorLevel.Warning, "Exception saving file: " + e.Message));
             }
 
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (ScriptData.ValidateParameters() == false)
-            {
-                ScriptData.BashScript = ScriptData.ValidationErrors;
-            }
+            //
+            //  should we do anything to highlight validation errors?
 
         }
-
-
-
-
-
-
 
         private void LongName_TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
@@ -433,14 +455,28 @@ namespace BashWizard
 
                 if (JSONShown)
                 {
-                    this.ScriptData = ScriptData.FromJson(this.ScriptData.JSON, this.ScriptData.UserCode);
+                    ScriptData newScriptData = ScriptData.FromBash(ScriptData.BashScript); // in case the user edited the text box
+                    this.ScriptData = ScriptData.FromJson(this.ScriptData.JSON, newScriptData.UserCode);
                     return;
                 }
                 else
                 {
 
-                    string bash = ScriptData.BashScript;
-                    this.ScriptData = ScriptData.FromBash(bash);
+                    ScriptData newScriptData = ScriptData.FromBash(ScriptData.BashScript);
+                    if (!newScriptData.HasFatalErrors)
+                    {
+                        this.ScriptData = newScriptData;
+
+                    }
+                    else
+                    {
+                        //
+                        //  ObservableCollection.AddRange doesn't fire notifications so the UI doesn't update -- so we add them one at a time...
+                        foreach (var errInfo in newScriptData.ParseErrors)
+                        {
+                            this.ScriptData.ParseErrors.Add(errInfo);
+                        }
+                    }
                 }
             }
             finally
@@ -517,7 +553,7 @@ namespace BashWizard
             dataPackage.SetText(ScriptData.BashScript);
             Clipboard.SetContent(dataPackage);
         }
-
+        
         private async void OnShowInputJson(object sender, RoutedEventArgs e)
         {
             ContentDialog dialog = new ContentDialog()
@@ -553,30 +589,53 @@ namespace BashWizard
             var result = await dialog.ShowAsync();
         }
 
-        private void OnShowWarnings(object sender, RoutedEventArgs e)
+        /// <summary>
+        ///     This is just an API that is called from the Test Button.  very useful during the dev process
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnTest(object sender, RoutedEventArgs e)
+        {
+           
+
+        }
+        /// <summary>
+        ///     this lets us highlight the ParameterItem that has a Validation Error
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnMessageSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
             {
-                ToggleButton btn = sender as ToggleButton;
-                if (txt_Bash.Visibility == Visibility.Visible)
+                if (e.AddedItems[0] is ParseErrorInfo errorInfo)
                 {
-                    txt_Bash.Visibility = Visibility.Collapsed;
-                    txt_Warnings.Visibility = Visibility.Visible;
-                    btn.IsChecked = true;
-
+                    if (errorInfo.Tag is ParameterItem item)
+                    {
+                        ListBox_Parameters.SelectedItem = item;
+                    }
                 }
-                else
-                {
-                    txt_Bash.Visibility = Visibility.Visible;
-                    txt_Warnings.Visibility = Visibility.Collapsed;
-                    btn.IsChecked = false;
-                }
-
             }
-            finally
+            catch
             {
-                splitView.IsPaneOpen = false;
+                // eat all exceptions
             }
+        }
+
+        private async void OnHelp(object sender, RoutedEventArgs e)
+        {
+            // The URI to launch
+            var uriReadme = new Uri(@"https://github.com/joelong01/Bash-Wizard/blob/master/README.md");
+
+            // Launch the URI
+            var success = await Windows.System.Launcher.LaunchUriAsync(uriReadme);
+
+            if (!success)
+            {
+                MessageDialog dlg = new MessageDialog("Error loading help web page.  the URI to the help file is:\n https://github.com/joelong01/Bash-Wizard/blob/master/README.md", "Bash Wizard");
+                await dlg.ShowAsync();
+            }
+            
         }
     }
 }

@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="5bbad883-c43b-4b3e-935e-84dc29aac381" Publisher="CN=xespu" Version="1.0.0.0" />
-  <mp:PhoneIdentity PhoneProductId="5bbad883-c43b-4b3e-935e-84dc29aac381" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Identity Name="10046JoeLong.BashWizard" Publisher="CN=0F3C1C50-2474-49FC-91E7-DA95BDB6EDB8" Version="1.0.1.0" />
+  <mp:PhoneIdentity PhoneProductId="90ad185b-4b30-4fdf-84dd-84bf536c9c49" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
-    <DisplayName>BashWizard</DisplayName>
-    <PublisherDisplayName>xespu</PublisherDisplayName>
+    <DisplayName>Bash Wizard</DisplayName>
+    <PublisherDisplayName>Joe Long</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>

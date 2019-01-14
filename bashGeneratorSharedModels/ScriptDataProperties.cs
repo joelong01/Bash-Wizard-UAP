@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
+
 using Newtonsoft.Json;
 
 namespace bashWizardShared
@@ -15,7 +15,7 @@ namespace bashWizardShared
             set => _updateProperties = value;
         }
 
-        
+
         private string _ScriptName = "";
         [JsonProperty]
         public string ScriptName
@@ -39,17 +39,19 @@ namespace bashWizardShared
             {
                 if (_bashScript != value)
                 {
+                    bool oldGenerateBashScript = GenerateBashScript;
+                    GenerateBashScript = false; // we don't generate a bash script when updating the text -- instead user clicks on "Refresh"
                     _bashScript = value;
-                    NotifyPropertyChanged();
                     //
                     //  whever the bash script changes, we might have changed one of these parameters...
-                    GenerateBashScript = false;
+                    
+                    NotifyPropertyChanged();
                     NotifyPropertyChanged("LoggingSupport");
                     NotifyPropertyChanged("AcceptsInputFile");
                     NotifyPropertyChanged("CreateVerifyDelete");
                     NotifyPropertyChanged("Warnings");
                     NotifyPropertyChanged("JSON");
-                    GenerateBashScript = true;
+                    GenerateBashScript = oldGenerateBashScript;
 
                 }
             }
@@ -111,7 +113,7 @@ namespace bashWizardShared
 
 
 
-        private string _Version = "0.900";
+        private string _Version = "0.905";
         [JsonProperty]
         public string Version
         {
@@ -170,35 +172,10 @@ namespace bashWizardShared
             }
         }
 
-        private List<string> _validatationErrors = new List<string>();
-        private List<string> ValidationErrorList
-        {
-            get => _validatationErrors;
-            set
-            {
-                if (_validatationErrors != value)
-                {
-                    _validatationErrors = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
+      
 
-        public string ValidationErrors
-        {
-            get
-            {
-                string ret = "Validation Errors\n=================\n";
-                for (int i = 0; i < ValidationErrorList.Count; i++)
-                {
-                    ret += $"{i + 1}. {ValidationErrorList[i]}\n";
-                }
-                return ret;
-            }
-        }
-
-        private ObservableCollection<string> _parseErrors = new ObservableCollection<string>();
-        public ObservableCollection<string> ParseErrors
+        private ObservableCollection<ParseErrorInfo> _parseErrors = new ObservableCollection<ParseErrorInfo>();
+        public ObservableCollection<ParseErrorInfo> ParseErrors
         {
             get => _parseErrors;
             set
@@ -210,23 +187,53 @@ namespace bashWizardShared
                 }
             }
         }
-        string _json = "";
+
+        private string _json = "";
         public string JSON
         {
-            get
-            {
-                return _json;
-            }
+            get => _json;
             set
             {
-              //  Debug.WriteLine($"JSON.set: {value}");
+                //  Debug.WriteLine($"JSON.set: {value}");
                 if (_json != value)
                 {
-                    _json = value;                    
+                    _json = value;
                     NotifyPropertyChanged();
                 }
             }
         }
+
+        public bool HasFatalErrors
+        {
+            get
+            {
+                foreach (var err in _parseErrors)
+                {
+                    if (err.ErrorLevel == ErrorLevel.Fatal)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        public bool HasValidationErrors
+        {
+            get
+            {
+                foreach (var err in _parseErrors)
+                {
+                    if (err.ErrorLevel == ErrorLevel.Validation)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+
 
 
     }

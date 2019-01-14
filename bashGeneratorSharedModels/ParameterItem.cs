@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace bashWizardShared
@@ -113,7 +114,7 @@ namespace bashWizardShared
                     _Default = value.Trim();
                     if (_Default != "")
                     {
-                        _Required = false;
+                        RequiredParameter = false;
                     }
                     
                     NotifyPropertyChanged();
@@ -166,6 +167,17 @@ namespace bashWizardShared
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        internal void TrimAll()
+        {
+                Default = Default.Trim();
+                Description = Description.Trim();
+                LongParameter = LongParameter.Trim();
+                ShortParameter = ShortParameter.Trim();
+                ValueIfSet = ValueIfSet.Trim();
+                VariableName = VariableName.Trim();
+            
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -1,7 +1,6 @@
 ﻿#!/bin/bash
-# bashWizard version 0.904
-#shellcheck disable=SC2154
 #---------- see https://github.com/joelong01/Bash-Wizard----------------
+# bashWizard version __VERSION__
 # this will make the error text stand out in red - if you are looking at these errors/warnings in the log file
 # you can use cat <logFile> to see the text in color.
 function echoError() {
@@ -68,7 +67,6 @@ function parseInput() {
     fi
     # read getopt’s output this way to handle the quoting right:
     eval set -- "$PARSED"
-    # now enjoy the options in order and nicely split until we see --
     while true; do
         case "$1" in
 __INPUT_CASE__
