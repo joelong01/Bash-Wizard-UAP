@@ -47,7 +47,7 @@ The easiest way to use Bash Wizard is to simply click on
 
 to get a new parameter:
 
-![Parameter](readme/parameter.png)
+![Blank Parameter](readme/blank%20parameter.png)
 
 Each Parameter has the following fields
 

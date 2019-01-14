@@ -39,6 +39,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{204561C7-5F69-4DAC-89E7-4557578F58EC}"
 	ProjectSection(SolutionItems) = preProject
 		readme\add param.png = readme\add param.png
+		readme\blank parameter.png = readme\blank parameter.png
 		readme\CVD.png = readme\CVD.png
 		readme\debug config.png = readme\debug config.png
 		readme\input json dialog.png = readme\input json dialog.png
