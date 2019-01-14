@@ -2,19 +2,16 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using Newtonsoft.Json;
 
 namespace bashWizardShared
 {
-    
+
     public partial class ScriptData : INotifyPropertyChanged
     {
-        private bool GenerateBashScript = false; 
+        private bool GenerateBashScript = false;
         public ScriptData()
         {
             UpdateOnPropertyChanged = false;
@@ -25,6 +22,7 @@ namespace bashWizardShared
             finally
             {
                 UpdateOnPropertyChanged = true;
+                GenerateBashScript = true;
             }
 
         }
@@ -41,7 +39,7 @@ namespace bashWizardShared
                 }
                 SetCreateLogDirectory(createLogFile);
                 SetCreateVerifyDelete(createVerifyDeletePattern);
-                SetAcceptsInputFile(acceptsInputFile);                
+                SetAcceptsInputFile(acceptsInputFile);
                 Description = description;
                 UserCode = userCode;
             }
@@ -56,6 +54,8 @@ namespace bashWizardShared
         {
             this.PropertyChanged += ParameterOrScriptData_PropertyChanged;
             this.Parameters.CollectionChanged += Parameters_CollectionChanged;
+
+
         }
 
         /// <summary>
@@ -114,47 +114,88 @@ namespace bashWizardShared
             {
                 return;
             }
-            ValidationErrorList.Clear();
-            if (e.PropertyName == "LongParameter")
+            bool oldGenerateBashScript = GenerateBashScript;
+            try
             {
-                ParameterItem item = sender as ParameterItem;
-                if (item.ShortParameter == "") // dont' pick one if the user already did...
+
+                GenerateBashScript = false;
+
+                if (sender is ParameterItem item)
                 {
-                    for (int i = 0; i < item.LongParameter.Length; i++)
+
+                    item.TrimAll();
+                    if (e.PropertyName == "LongParameter")
                     {
 
-                        item.ShortParameter = item.LongParameter.Substring(i, 1);
-                        if (item.ShortParameter == "")
-                        {
-                            continue;
-                        }
-                        if (ValidateParameters())
-                        {
-                            break;
-                        }
-                    }
-                    if (!ValidateParameters())
-                    {
-                        item.ShortParameter = ""; // can't find a short name automatically                        
-                    }
-                }
-                if (item.VariableName == "")
-                {
-                    string[] tokens = item.LongParameter.Split(new char[] { '-' });
 
-                    item.VariableName = tokens[0].ToLower();
-                    for (int i = 1; i < tokens.Length; i++)
-                    {
-                        item.VariableName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                        if (item.ShortParameter == "") // dont' pick one if the user already did...
+                        {
+                            for (int i = 0; i < item.LongParameter.Length; i++)
+                            {
+
+                                item.ShortParameter = item.LongParameter.Substring(i, 1);
+                                if (item.ShortParameter == "")
+                                {
+                                    continue;
+                                }
+                                if (ValidateParameters())
+                                {
+                                    break;
+                                }
+                            }
+                            if (!ValidateParameters())
+                            {
+                                item.ShortParameter = ""; // can't find a short name automatically                        
+                            }
+                        }
+                        if (item.VariableName == "")
+                        {
+                            string[] tokens = item.LongParameter.Split(new char[] { '-' });
+
+                            item.VariableName = tokens[0].ToLower();
+                            for (int i = 1; i < tokens.Length; i++)
+                            {
+                                item.VariableName += tokens[i][0].ToString().ToUpper() + tokens[i].Substring(1);
+                            }
+                        }
                     }
+
+
                 }
             }
-
-            if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode" && e.PropertyName != "JSON") // don't update the BashScript when we are updating the BashScript...
+            finally
             {
-                ToBash();                
+                GenerateBashScript = oldGenerateBashScript;
+                if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode" && e.PropertyName != "JSON") // don't update the BashScript when we are updating the BashScript...
+                {
+                    ToBash();
+                }
+
             }
 
+        }
+
+        private void ClearValidationErrors()
+        {
+            for (int i = ParseErrors.Count - 1; i >= 0; i--)
+            {
+                var errInfo = ParseErrors[i];
+                if (errInfo.ErrorLevel == ErrorLevel.Validation)
+                {
+                    ParseErrors.RemoveAt(i);
+                }
+            }
+        }
+        private void ClearParseErrors()
+        {
+            for (int i = ParseErrors.Count - 1; i >= 0; i--)
+            {
+                var errInfo = ParseErrors[i];
+                if (errInfo.ErrorLevel != ErrorLevel.Validation)
+                {
+                    ParseErrors.RemoveAt(i);
+                }
+            }
         }
 
         private void Reset()
@@ -167,7 +208,112 @@ namespace bashWizardShared
 
         }
 
-        public void StripLeadingAndTrailingSpaces()
+
+
+        /// <summary>
+        ///     this is like compiler errors/warnings when generating a bash script
+        /// </summary>
+        /// <returns></returns>
+        public bool ValidateParameters(bool allowBlankParameters = true)
+        {
+            //verify short names are unique
+            Dictionary<string, ParameterItem> nameDictionary = new Dictionary<string, ParameterItem>();
+            Dictionary<string, ParameterItem> variableDictionary = new Dictionary<string, ParameterItem>();
+
+            ClearValidationErrors();
+            ParameterItem item = null;
+            foreach (var param in Parameters)
+            {
+
+
+                if (allowBlankParameters)
+                {
+                    if (param.ShortParameter == "" && param.LongParameter == "")
+                    {
+                        continue; // probably just getting started
+                    }
+                }
+
+                if (param.ShortParameter == "" || param.LongParameter == "" || param.VariableName == "")
+                {
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: All Long Names, Short Names, and Variable Names must be non-empty."));
+                }
+
+                if (nameDictionary.TryGetValue(param.ShortParameter, out item))
+                {
+                    var otherIndex = Parameters.IndexOf(item);
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The name \"{param.ShortParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
+                }
+                else
+                {
+                    nameDictionary[param.ShortParameter] = param;
+                }
+                if (nameDictionary.TryGetValue(param.LongParameter, out item))
+                {
+                    var otherIndex = Parameters.IndexOf(item);
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The name \"{param.LongParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
+                }
+                else
+                {
+                    nameDictionary[param.LongParameter] = param;
+                }
+                if (variableDictionary.TryGetValue(param.VariableName, out item))
+                {
+                    var otherIndex = Parameters.IndexOf(item);
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The variable \"{param.VariableName}\" already exists for the parameter with index={otherIndex}. All Variable Names must be unique."));
+                }
+                else
+                {
+                    variableDictionary[param.VariableName] = param;
+                }
+
+
+                if (!param.RequiresInputString && param.ValueIfSet.Trim() == "$2")
+                {
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed."));
+                }
+
+            }
+            //
+            //  i'm taking out these chars because they are "special" in JSON.  I found that the ":" messed up JQ processing
+            //  and it seems a small price to pay to not take any risks with the names.  Note that we always Trim() the names
+            //  in the ParameterOrScriptData_PropertyChanged method
+            //  
+            string[] illegalNameChars = new string[] { ":", "{", "}", "[", "]", "\\", "'", "\"" };
+            if (ScriptName != "")
+            {
+                foreach (string c in illegalNameChars)
+                {
+                    if (ScriptName.Contains(c))
+                    {
+                        AddValidationError(null, new ParseErrorInfo(ErrorLevel.Validation, "The following characters are illegal in the Script Name: :{}[]\"\'"));
+                        break; // we only print one error anyway
+                    }
+                }
+            }
+            if (Description != "")
+            {
+                foreach (string c in illegalNameChars)
+                {
+                    if (Description.Contains(c))
+                    {
+                        AddValidationError(null, new ParseErrorInfo(ErrorLevel.Validation, "The following characters are illegal in the Description: :{}[]\"\'"));
+                        break; // we only print one error anyway
+                    }
+                }
+            }
+
+
+
+
+            return ParseErrors.Count == 0;
+
+        }
+
+        /// <summary>
+        /// we don't want the Parameter Properties to have any preceding or trailing spaces
+        /// </summary>
+        private void TrimAll()
         {
             foreach (ParameterItem parameter in Parameters)
             {
@@ -180,59 +326,26 @@ namespace bashWizardShared
             }
         }
 
-       
-
         /// <summary>
-        ///     this is like compiler errors/warnings when generating a bash script
+        ///     make sure we don't add exactly the same error twice
         /// </summary>
-        /// <returns></returns>
-        public bool ValidateParameters()
+        /// <param name="findOrAdd"></param>
+        private void AddValidationError(ParameterItem item, ParseErrorInfo findOrAdd)
         {
-            //verify short names are unique
-            HashSet<string> shortNames = new HashSet<string>();
-            HashSet<string> longNames = new HashSet<string>();
-            ValidationErrorList.Clear();
-            foreach (ParameterItem param in Parameters)
+            foreach (var error in ParseErrors)
             {
-                if (param.ShortParameter == "" && param.LongParameter == "")
+                if (error.ErrorLevel == findOrAdd.ErrorLevel && error.Message == findOrAdd.Message)
                 {
-                    continue; // probably just getting started
+                    return;
                 }
-
-                if (!shortNames.Add(param.ShortParameter))
-                {
-                    ValidationErrorList.Add($"{param.ShortParameter} exists at least twice.  please fix it.");
-                    break;
-                }
-                if (!longNames.Add(param.LongParameter))
-                {
-                    ValidationErrorList.Add($"{param.LongParameter} exists at least twice.  please fix it.");
-                    break;
-                }
-
-                if (!param.RequiresInputString && param.ValueIfSet.Trim(new char[] { ' ' }) == "$2")
-                {
-                    ValidationErrorList.Add($"Parameter {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed.");
-                    break;
-                }
-
             }
 
-            if (Parameters.Count == 0)
+            ParseErrors.Add(findOrAdd);
+            if (item != null)
             {
-                ValidationErrorList.Add("We won't create a script with zero Parameters");
+                findOrAdd.Tag = item;
             }
-
-            if (ScriptName.IndexOf(":") != -1)
-            {
-                ValidationErrorList.Add($"Script names cannot have : in them.");
-            }
-
-
-            return ValidationErrorList.Count == 0;
-
         }
-       
 
         private ParameterItem FindParameterByVarName(string varName)
         {
@@ -300,7 +413,7 @@ namespace bashWizardShared
         {
             return "".PadLeft(n * 4);
         }
-        
+
         public static bool FunctionExists(string bashScript, string name)
         {
             if (bashScript == "")
@@ -394,7 +507,7 @@ namespace bashWizardShared
 
                     msg = $"You can unselected the Create, Verify, Delete pattern, but you have the following functions implemented:\n{err}\n\nManually fix the user code to not need these functions before removing this option.";
                     return (ret: false, msg: msg);
-                    
+
                 }
             }
 
@@ -442,7 +555,7 @@ namespace bashWizardShared
 
         private void AddOptionParameter(ParameterItem item, bool add)
         {
-            
+
 
             ParameterItem param = null;
             foreach (ParameterItem p in Parameters)
@@ -478,6 +591,7 @@ namespace bashWizardShared
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 
