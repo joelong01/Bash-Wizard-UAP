@@ -36,6 +36,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mac", "Mac", "{90069B38-255
 		Binaries\Mac\bw.runtimeconfig.json = Binaries\Mac\bw.runtimeconfig.json
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{204561C7-5F69-4DAC-89E7-4557578F58EC}"
+	ProjectSection(SolutionItems) = preProject
+		readme\add param.png = readme\add param.png
+		readme\CVD.png = readme\CVD.png
+		readme\debug config.png = readme\debug config.png
+		readme\input json dialog.png = readme\input json dialog.png
+		readme\input json.png = readme\input json.png
+		readme\optional features.png = readme\optional features.png
+		readme\parameter.PNG = readme\parameter.PNG
+		readme\same names.PNG = readme\same names.PNG
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
