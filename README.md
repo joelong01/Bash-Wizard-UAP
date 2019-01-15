@@ -9,9 +9,9 @@ This is where Bash Wizard comes in handy. Bash Wizard is a Windows Application t
 
 1. Add, Modify, and Delete Parameters
 2. For each parameter a default can be specified and the variable is declared in the script
-2. creates EchoInfo, EchoWarning, Echo Error functions to enable colorizing output
-3. Creates an Usage() API that tells the user how to use the script
-4. Creates an EchoInput() API that will be called by the script to show the user what parameters were passed in
+2. creates EchoInfo, EchoWarning, EchoError functions to enable colorizing output
+3. Creates an Usage() function that tells the user how to use the script
+4. Creates an EchoInput() function that will be called by the script to show the user what parameters were passed in
 5. Parses the command line and sets the appropriate variable based on what was passed in
 7. Verifies that all required parameters have been passed in and errors out if not.
 8. Has built in support to load input from a JSON input file.
@@ -51,11 +51,11 @@ to get a new parameter:
 
 Each Parameter has the following fields
 
-- Long Name: the name of the parameter that is passed to the script with "--". This typically means something to the human using the script, like "long-parameter".
+- Long Name: the name of the parameter that is passed to the script with "--". This typically means something to the human using the script, like "long-parameter".  Do not put the "--" in this field.
 - Short Name: the name of the parameter that is passed to the script with "-". This is typically one letter, like "l"
 - Variable Name: the name the script will use as its variable.  As such it must follow the Bash variable naming convention.
 - Default: the value the variable is set to when it is declared.  NOTE:  if a default is set, it cannot be a Required Parameter (because it's value is never empty)
-- Description: used in the Usage() API to tell the user what this parameter is for
+- Description: used in the Usage() function to tell the user what this parameter is for
 - Value If Set: used when parsing the input. If the value is passed in from the command line, this should be set to $2.
 - Requires Input String:  if Checked, then Value If Set must be $2. If not checked, then Value if set **cannot** be $2.  Bash Wizard enforces this rule.
 - Required Parameter: if Checked, the generated script will call the Usage() function and exit if the parameter's value is empty (e.g if [[ -z $myVar ]]
@@ -74,7 +74,7 @@ You can click on the error to select the parameter that has the problem.
 Another typical pattern is for optional flag parameters.  The recommended way to do this is to set the default to false (which makes it non Required) and then set the "Value if Set" to true.
 See the "Create, Verify, Delete Pattern" in the Optional Features section below for an example of how to do this, both in the tool and in the Bash Script.
 
-## Opening and Existing Bash File
+## Opening an Existing Bash File
 
 Bash Wizard can open a Bash file and parse it looking for the Bash Wizard code to generate the Parameter List. Opening a script that started "Starting Fresh" scenario is the normal case.  
 It is very important
@@ -92,9 +92,9 @@ As long as you stick to these rules, you will be able to load, modify, and save 
 
 If there is an error parsing the Bash Script, there will be an entry on the message list.  For example, if you manually declare a variable in the Bash Wizard section, you'll get an error similar to:
 
-If you have an error message from parsing the Bash Script, fix it and then hit Refresh again to make the error go away.
-
 ![Parse Error](parse%20error.png)
+
+If you have an error message from parsing the Bash Script, fix it and then hit Refresh again to make the error go away.
 
 You can also copy and paste a script into the Bash Script text box and then hit this button
 
@@ -115,7 +115,7 @@ you can copy or paste in the JSON format of the parameters.  If you edit the JSO
 2. Parse the JSON, creating the Parameters, File Name, and Description
 2. Generate the Bash Scripts
 
-these feature is useful if you'd rather use a text editor to create your Parameters and the UI.  Or if you have a default set of parameters that you typically use, you can save the JSON for them 
+This feature is useful if you'd rather use a text editor to create your Parameters and the UI or if you have a default set of parameters that you typically use, you can save the JSON for them 
 (File Open, Save, Save As are all context sensitive) and use it as a starting position.
  
 ## Optional Features
@@ -228,7 +228,7 @@ Doing it this way allows you got call a "createAzureResourceGroup.sh" script wit
 ```bash
 	./createAzureResourceGroup.sh -cvd
 ```
-(other parameters left off for brevity) which will first delete the Resource Group if it exists, then create it, then vefify it.  You can also call it with just
+(other parameters left off for brevity) which will first delete the Resource Group if it exists, then create it, then verify it.  You can also call it with just
 ```bash
 	./createAzureResourceGroup.sh -cv
 ```
@@ -243,7 +243,8 @@ which only calls the verify function.
 
 Visual Studio Code has an extension for debugging Bash Scripts: https://marketplace.visualstudio.com/items?itemName=rogalmic.bash-debug
 
-This has proven to be incredibly useful and it is highly recommended.  To use the extension in VS Code, you have to create a debug configuration.  I found the easiest way to do this is to have a configuration per file where I pass the input. To make this easier, Bash Wizard has this feature:
+This has proven to be incredibly useful and it is highly recommended.  To use the extension in VS Code, you have to create a debug configuration.  I found the easiest way to do this is to have a configuration per file where I pass the input. 
+To make this easier, Bash Wizard has this feature:
 
 ![Debug Config](readme/debug%20config.png)
 

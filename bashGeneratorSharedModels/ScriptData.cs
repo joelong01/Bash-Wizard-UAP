@@ -104,8 +104,8 @@ namespace bashWizardShared
         //
         //  when any property changes -- either on the ScriptData object *or* on the ParameterItem object, update the bash file
         //
-        //  you can change the parameter data inside this fuction, but what I tried to do was change only things that require
-        //  global knowledge in this fuction (e.g. auto picking a short name needs knowledge of all the short names).  if you 
+        //  you can change the parameter data inside this function, but what I tried to do was change only things that require
+        //  global knowledge in this function (e.g. auto picking a short name needs knowledge of all the short names).  if you 
         //  just need information local to the parameter, change it in the property setters.
         //
         private void ParameterOrScriptData_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -115,6 +115,7 @@ namespace bashWizardShared
                 return;
             }
             bool oldGenerateBashScript = GenerateBashScript;
+            bool oldUpdateOnPropertyChanged = UpdateOnPropertyChanged;
             try
             {
 
@@ -126,9 +127,10 @@ namespace bashWizardShared
                     item.TrimAll();
                     if (e.PropertyName == "LongParameter")
                     {
+                        
+                        UpdateOnPropertyChanged = false; // don't recurse
 
-
-                        if (item.ShortParameter == "") // dont' pick one if the user already did...
+                        if (item.ShortParameter == "") // don't pick one if the user already did...
                         {
                             for (int i = 0; i < item.LongParameter.Length; i++)
                             {
@@ -138,12 +140,12 @@ namespace bashWizardShared
                                 {
                                     continue;
                                 }
-                                if (ValidateParameters())
+                                if (ValidateParameters(true))
                                 {
                                     break;
                                 }
                             }
-                            if (!ValidateParameters())
+                            if (!ValidateParameters(true))
                             {
                                 item.ShortParameter = ""; // can't find a short name automatically                        
                             }
@@ -166,11 +168,12 @@ namespace bashWizardShared
             finally
             {
                 GenerateBashScript = oldGenerateBashScript;
+                UpdateOnPropertyChanged = oldUpdateOnPropertyChanged;
                 if (e.PropertyName != "BashScript" && e.PropertyName != "UserCode" && e.PropertyName != "JSON") // don't update the BashScript when we are updating the BashScript...
                 {
                     ToBash();
                 }
-
+                
             }
 
         }
@@ -233,10 +236,12 @@ namespace bashWizardShared
                         continue; // probably just getting started
                     }
                 }
-
-                if (param.ShortParameter == "" || param.LongParameter == "" || param.VariableName == "")
+                else
                 {
-                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: All Long Names, Short Names, and Variable Names must be non-empty."));
+                    if (param.ShortParameter == "" || param.LongParameter == "" || param.VariableName == "")
+                    {
+                        AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: All Long Names, Short Names, and Variable Names must be non-empty."));
+                    }
                 }
 
                 if (nameDictionary.TryGetValue(param.ShortParameter, out item))
@@ -275,7 +280,7 @@ namespace bashWizardShared
 
             }
             //
-            //  i'm taking out these chars because they are "special" in JSON.  I found that the ":" messed up JQ processing
+            //  I'm taking out these chars because they are "special" in JSON.  I found that the ":" messed up JQ processing
             //  and it seems a small price to pay to not take any risks with the names.  Note that we always Trim() the names
             //  in the ParameterOrScriptData_PropertyChanged method
             //  
