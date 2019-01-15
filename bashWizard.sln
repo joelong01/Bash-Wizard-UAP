@@ -27,6 +27,21 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Binaries", "Binaries", "{0A76E57B-9A3C-4259-ABC2-E94F0EF0686E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mac", "Mac", "{90069B38-2551-40D8-8AAF-1A0F7AFDFAB6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{204561C7-5F69-4DAC-89E7-4557578F58EC}"
+	ProjectSection(SolutionItems) = preProject
+		readme\add param.png = readme\add param.png
+		readme\blank parameter.png = readme\blank parameter.png
+		readme\CVD.png = readme\CVD.png
+		readme\debug config.png = readme\debug config.png
+		readme\input json dialog.png = readme\input json dialog.png
+		readme\input json.png = readme\input json.png
+		readme\optional features.png = readme\optional features.png
+		readme\parameter.PNG = readme\parameter.PNG
+		readme\same names.PNG = readme\same names.PNG
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug", "Debug", "{47BAE695-33CC-44C6-9347-F9E30E9BA7A9}"
 	ProjectSection(SolutionItems) = preProject
 		Binaries\Mac\bashWizardLib.dll = Binaries\Mac\bashWizardLib.dll
 		Binaries\Mac\bashWizardLib.pdb = Binaries\Mac\bashWizardLib.pdb
@@ -36,16 +51,39 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mac", "Mac", "{90069B38-255
 		Binaries\Mac\bw.runtimeconfig.json = Binaries\Mac\bw.runtimeconfig.json
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Readme", "Readme", "{204561C7-5F69-4DAC-89E7-4557578F58EC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{5B5A9429-9131-429E-B1F7-D225DE5AE746}"
 	ProjectSection(SolutionItems) = preProject
-		readme\add param.png = readme\add param.png
-		readme\CVD.png = readme\CVD.png
-		readme\debug config.png = readme\debug config.png
-		readme\input json dialog.png = readme\input json dialog.png
-		readme\input json.png = readme\input json.png
-		readme\optional features.png = readme\optional features.png
-		readme\parameter.PNG = readme\parameter.PNG
-		readme\same names.PNG = readme\same names.PNG
+		Binaries\Mac\Release\bashWizardLib.dll = Binaries\Mac\Release\bashWizardLib.dll
+		Binaries\Mac\Release\bashWizardLib.pdb = Binaries\Mac\Release\bashWizardLib.pdb
+		Binaries\Mac\Release\bw.deps.json = Binaries\Mac\Release\bw.deps.json
+		Binaries\Mac\Release\bw.dll = Binaries\Mac\Release\bw.dll
+		Binaries\Mac\Release\bw.pdb = Binaries\Mac\Release\bw.pdb
+		Binaries\Mac\Release\bw.runtimeconfig.json = Binaries\Mac\Release\bw.runtimeconfig.json
+		Binaries\Mac\Release\Newtonsoft.Json.dll = Binaries\Mac\Release\Newtonsoft.Json.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Linux", "Linux", "{A90283C2-4D9A-432A-B2CA-30B76640C191}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug", "Debug", "{1CC9FB11-4A4D-4127-96AD-30B7946954FC}"
+	ProjectSection(SolutionItems) = preProject
+		Binaries\Linux\Debug\bashWizardLib.dll = Binaries\Linux\Debug\bashWizardLib.dll
+		Binaries\Linux\Debug\bashWizardLib.pdb = Binaries\Linux\Debug\bashWizardLib.pdb
+		Binaries\Linux\Debug\bw.deps.json = Binaries\Linux\Debug\bw.deps.json
+		Binaries\Linux\Debug\bw.dll = Binaries\Linux\Debug\bw.dll
+		Binaries\Linux\Debug\bw.pdb = Binaries\Linux\Debug\bw.pdb
+		Binaries\Linux\Debug\bw.runtimeconfig.json = Binaries\Linux\Debug\bw.runtimeconfig.json
+		Binaries\Linux\Debug\Newtonsoft.Json.dll = Binaries\Linux\Debug\Newtonsoft.Json.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{115F3EFE-04C2-477F-8ABA-8ED9777A5524}"
+	ProjectSection(SolutionItems) = preProject
+		Binaries\Linux\Release\bashWizardLib.dll = Binaries\Linux\Release\bashWizardLib.dll
+		Binaries\Linux\Release\bashWizardLib.pdb = Binaries\Linux\Release\bashWizardLib.pdb
+		Binaries\Linux\Release\bw.deps.json = Binaries\Linux\Release\bw.deps.json
+		Binaries\Linux\Release\bw.dll = Binaries\Linux\Release\bw.dll
+		Binaries\Linux\Release\bw.pdb = Binaries\Linux\Release\bw.pdb
+		Binaries\Linux\Release\bw.runtimeconfig.json = Binaries\Linux\Release\bw.runtimeconfig.json
+		Binaries\Linux\Release\Newtonsoft.Json.dll = Binaries\Linux\Release\Newtonsoft.Json.dll
 	EndProjectSection
 EndProject
 Global
@@ -122,6 +160,11 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{90069B38-2551-40D8-8AAF-1A0F7AFDFAB6} = {0A76E57B-9A3C-4259-ABC2-E94F0EF0686E}
+		{47BAE695-33CC-44C6-9347-F9E30E9BA7A9} = {90069B38-2551-40D8-8AAF-1A0F7AFDFAB6}
+		{5B5A9429-9131-429E-B1F7-D225DE5AE746} = {90069B38-2551-40D8-8AAF-1A0F7AFDFAB6}
+		{A90283C2-4D9A-432A-B2CA-30B76640C191} = {0A76E57B-9A3C-4259-ABC2-E94F0EF0686E}
+		{1CC9FB11-4A4D-4127-96AD-30B7946954FC} = {A90283C2-4D9A-432A-B2CA-30B76640C191}
+		{115F3EFE-04C2-477F-8ABA-8ED9777A5524} = {A90283C2-4D9A-432A-B2CA-30B76640C191}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {94248F20-4FCD-4074-8D9D-F336CC10D249}

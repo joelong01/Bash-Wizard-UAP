@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="10046JoeLong.BashWizard" Publisher="CN=0F3C1C50-2474-49FC-91E7-DA95BDB6EDB8" Version="1.0.1.0" />
+  <Identity Name="10046JoeLong.BashWizard" Publisher="CN=0F3C1C50-2474-49FC-91E7-DA95BDB6EDB8" Version="1.0.3.0" />
   <mp:PhoneIdentity PhoneProductId="90ad185b-4b30-4fdf-84dd-84bf536c9c49" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>Bash Wizard</DisplayName>

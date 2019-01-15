@@ -43,7 +43,7 @@ namespace bashWizardShared
                     GenerateBashScript = false; // we don't generate a bash script when updating the text -- instead user clicks on "Refresh"
                     _bashScript = value;
                     //
-                    //  whever the bash script changes, we might have changed one of these parameters...
+                    //  whenever the bash script changes, we might have changed one of these parameters...
                     
                     NotifyPropertyChanged();
                     NotifyPropertyChanged("LoggingSupport");
