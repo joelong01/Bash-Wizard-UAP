@@ -61,7 +61,6 @@ function parseInput() {
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
         # e.g. return value is 1
         # then getopt has complained about wrong arguments to stdout
-        echoError "you might be running bash on a Mac.  if so, run 'brew install gnu-getopt' to make the command line processing work."
         usage
         exit 2
     fi
