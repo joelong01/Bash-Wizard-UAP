@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using bashWizardShared;
@@ -30,6 +31,7 @@ namespace BashWizardConsole
                 new Parameter("OutputFile",         "-o", "--output-file", true, "", false,"Represents the output bash or JSON file.  If not specified, STDOUT is assumed"),
                 new Parameter("ParseAndCreate",     "-p", "--parse-and-create", false, "", false, "Parses the input file and creates a bash file specified --output-file (-o)"),
                 new Parameter("VSCodeDebugInfo",    "-d", "--vs-code-debug-info", false, "", false, "Outputs the JSON config needed for the VS Code Bash Debug extension"),
+                new Parameter("AddParameters",      "-a", "--add-parameters", true, "", false, "takes a JSON file as input (stdin or -i) and merges the parameters from the -a file outputting a new bash script to stdout or -o.  example: curl http://somescript-from-web.sh  | bw --json common.json | bw --json specific.json --add-parameters > output.sh"),
                 new Parameter("OutputJson",         "-j", "--json", false, "", false, "Outputs the JSON file given the bash file.  e.g. \"cat foo.sh | bw -j\", \" cat foo.sh | bw -j > foo.json\", or \"cat foo.sh | bw -j -o foo.json\""),
                 new Parameter("MakeJsonInputParameters", "-k", "--output-json-input-config", false, "", false, "outputs the json file that has all of the input variables to set"),
                 new Parameter("Help",               "-h", "--help", false, "", false,"Prints the help")
@@ -45,7 +47,7 @@ namespace BashWizardConsole
             {
 
                 input = ParseCommandLine(args, parameters); // this can throw
-                
+
                 //
                 //  you can pass a file in via StdIn
                 string stdin = "";
@@ -130,8 +132,8 @@ namespace BashWizardConsole
             {
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.Write(e.Message);
-
+                Console.Error.WriteLine(e.Message);
+                Debug.WriteLine(e.Message);
             }
             finally
             {
@@ -163,8 +165,19 @@ namespace BashWizardConsole
             // always get contents to make the functions consistent when input is piped in
             if (input.SetFlags.TryGetValue("InputFile", out Parameter param))
             {
-                inputContents = File.ReadAllText(param.Value); // this can throw
+                if (File.Exists(param.Value))
+                {
+                    inputContents = File.ReadAllText(param.Value); // this can throw
+                    if (inputContents == "")
+                    {
+                        throw new ArgumentException($"The file {param.Value} is empty");
+                    }
 
+                }
+                else
+                {
+                    throw new Exception($"File {param.Value} does not exist for property {param.LongName}");
+                }
             }
             else if (stdin != "")
             {
@@ -278,7 +291,10 @@ namespace BashWizardConsole
         /// <returns></returns>
         private static ScriptData FromFileContents(string inputContents)
         {
-
+            if (inputContents == "")
+            {
+                throw new ArgumentException("The file is empty");
+            }
             ScriptData scriptData = null;
 
             // is it bash, json, or trash?
@@ -394,15 +410,15 @@ namespace BashWizardConsole
         /// <param name="columns"></param>
         /// <param name="flags"></param>
         /// <param name="pad"></param>
-        private static void AppendColumns(StringBuilder sb, string[] values, int[] columns, bool[] flags, char[] pad )
+        private static void AppendColumns(StringBuilder sb, string[] values, int[] columns, bool[] flags, char[] pad)
         {
             int count = values.Length;
             if (columns.Length != count || flags.Length != count)
             {
                 throw new ArgumentException("array lengths must match");
             }
-            
-            for (int i=0; i<count; i++)
+
+            for (int i = 0; i < count; i++)
             {
                 if (flags[i])
                 {
@@ -425,19 +441,19 @@ namespace BashWizardConsole
             //   
             //
 
-            
+
             StringBuilder sb = new StringBuilder();
 
             string[] header = new string[] { "Flag", "Required", "Description" };
             var (maxLongParam, maxDescription) = GetLongestParameter(parameters);
-         
+
             int[] columnWidths = new int[] { 4, maxLongParam + 5, 4, 8, 4, maxDescription > 80 ? 80 : maxDescription };
             bool[] boolPadFlags = new bool[] { true, false, true, true, true, false };
             string[] columnHeaders = new string[] { "", "Flag", "", "Required", "", "Description" };
             char[] defaultPadding = new char[] { ' ', ' ', ' ', ' ', ' ', ' ' };
             AppendColumns(sb, columnHeaders, columnWidths, boolPadFlags, defaultPadding);
             sb.Append("\n");
-            AppendColumns(sb, new string[] {"","","","", "", "" }, columnWidths, boolPadFlags, new char[] { ' ', '=', ' ', '=', ' ', '=' });
+            AppendColumns(sb, new string[] { "", "", "", "", "", "" }, columnWidths, boolPadFlags, new char[] { ' ', '=', ' ', '=', ' ', '=' });
             sb.Append("\n");
 
 
@@ -448,9 +464,9 @@ namespace BashWizardConsole
                 PrintColumn(sb, columnWidths, 2, "", ' ', true);
                 PrintColumn(sb, columnWidths, 3, param.Required ? "(yes)" : "(no)", ' ', false);
                 PrintColumn(sb, columnWidths, 4, "", ' ', true);
-               
-                
-               
+
+
+
                 if (param.Description.Length <= columnWidths[5])
                 {
                     PrintColumn(sb, columnWidths, 5, param.Description, ' ', false);
@@ -462,17 +478,28 @@ namespace BashWizardConsole
                     int currentPosition = 0;
                     int columnWidth = columnWidths[5];
                     int startPos = columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3] + columnWidths[4];
-                    while(true)
+                    while (true)
                     {
                         int toCopy = columnWidth;
                         if (columnWidth + currentPosition > param.Description.Length)
                         {
                             toCopy = param.Description.Length - currentPosition;
                         }
-                        
+
+                        // make sure we end the line on a space
+                        while (param.Description[toCopy + currentPosition - 1] != ' ' && toCopy + currentPosition < param.Description.Length)
+                        {
+
+                            toCopy--;
+                        }
+                        //if (toCopy + currentPosition > param.Description.Length)
+                        //{
+                        //    toCopy = param.Description.Length - currentPosition - 1;
+                        //}
+
                         string toWrite = param.Description.Substring(currentPosition, toCopy);
                         PrintColumn(sb, columnWidths, 5, toWrite, ' ', false);
-                        sb.Append($"\n");                        
+                        sb.Append($"\n");
                         currentPosition += toWrite.Length;
                         if (currentPosition < param.Description.Length)
                         {
@@ -482,17 +509,17 @@ namespace BashWizardConsole
                         {
                             break;
                         }
-                    } 
+                    }
                 }
             }
-    
+
 
             sb.Append("\n");
             sb.Append("Examples\n");
             sb.Append("========\n");
             foreach (var s in examples)
             {
-                sb.Append($"{s}\n");                
+                sb.Append($"{s}\n");
             }
             return sb.ToString();
         }

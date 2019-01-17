@@ -113,7 +113,7 @@ namespace bashWizardShared
 
 
 
-        private string _Version = "0.905";
+        private string _Version = "0.906";
         [JsonProperty]
         public string Version
         {
