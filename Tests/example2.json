@@ -1,0 +1,21 @@
+{
+  "ScriptName": "test.sh",
+  "LoggingSupport": true,
+  "AcceptsInputFile": true,
+  "CreateVerifyDelete": true,
+  "Version": "0.906",
+  "Description": "Sample test script",
+  "Parameters": [
+    {
+      "ShortParameter": "t",
+      "LongParameter": "test",
+      "Description": "a parameter that will be merged into example1.sh",
+      "VariableName": "test",
+      "RequiresInputString": false,
+      "Default": "false",
+      "RequiredParameter": false,
+      "ValueIfSet": "true"
+    }
+  ]
+}
+

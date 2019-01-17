@@ -18,7 +18,7 @@ namespace bashWizardShared
         }
         public override string ToString()
         {
-            return $"{ErrorLevel}-{Message}\n";
+            return $"[ErroLevel={ErrorLevel.ToString("G")}] [Message={Message}]\n";
         }
     }
 }

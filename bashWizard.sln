@@ -7,6 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BashWizard", "BashWizard\Ba
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{92300413-DF06-4F87-80A6-5C3E4A7EF4C8}"
 	ProjectSection(SolutionItems) = preProject
+		Tests\example1.json = Tests\example1.json
+		Tests\example1.sh = Tests\example1.sh
+		Tests\example2.json = Tests\example2.json
 		Tests\installDotNetUbuntuForWindows.sh = Tests\installDotNetUbuntuForWindows.sh
 		Tests\macGetOptInstall.sh = Tests\macGetOptInstall.sh
 		Tests\testDriver.json = Tests\testDriver.json

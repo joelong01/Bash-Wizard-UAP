@@ -229,113 +229,40 @@ declare LOG_FILE="${logDirectory}testDriver.sh.log"
 
     echoInput
     # --- BEGIN USER CODE ---
-# we have a dependency on .net core
-	echo -n "looking for .net core..."
-	if [[ ! -x "$(command -v dotnet)" ]]; then
-		echoError "'.net core 2.1+ is needed to run this script.  please install it.  see https://docs.microsoft.com/en-us/dotnet/core/linux-prerequisites?tabs=netcore2x"
-		echoError "if running Windows, this will likely work: curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS"
-		echoError "but you will have to edit ~./profile to add .net to your path"
-		echoError "aftwards make sure dotnet.exe is in the path"
-		echoError "if you are on a mac, you porbably want to add a symbolic link by running this: n -s /usr/local/share/dotnet/dotnet /usr/local/bin/"
-		exit 1
-	fi
-	echoInfo "found it!"
-	# first we use the BashWizard bw.dll to read this and parse this file and then create a new bash file
-	# that we will run our tests against.
+    function onVerify() {
+        
+    }
+    function onDelete() {
+        
+    }
+    function onCreate() {
+        
+    }
+    
+    
+    
+    
 
-	if [[ "$loadParseSave" == true ]]; then
-		declare newFileName="$0.2.sh"
-		if [[ ! -f "$bwDll" ]]; then
-			echoError "$bwDll does not exist. please pass a correct DLL"
-			echoError "the DLL can either be built and published, or you can get it from https://github.com/joelong01/Bash-Wizard/Binaries"
-			exit 0
-		else
-			echoInfo "found $bwDll"
-			echo "creating new script file $newFileName"
-			dotnet "$bwDll" -p -i "$0" -o "$newFileName"
-            chmod a+x "$newFileName"
-		fi
-	else
-		newFileName=$0
-	fi
+    #
+    #   the order matters - delete, then create, then verify
+    #
 
-	echoInfo "Script: $0 has LogFile: $LOG_FILE"
+    if [[ $delete == "true" ]]; then
+        onDelete
+    fi
 
-	function onVerify() {
-		echoInfo "onVerify called"
-	}
-	function onDelete() {
-		echoInfo "onDelete called"
-	}
-	function onCreate() {
-		echoInfo "onCreate called"
-	}
+    if [[ $create == "true" ]]; then
+        onCreate
+    fi
+   
+    if [[ $verify == "true" ]]; then
+        onVerify        
+    fi
 
-	if [[ $testVerify == 'true' ]]; then
-		echo "testing --verify"
-		ret=$("$newFileName" --verify --log-directory ./logging/logs/)
-		if [[ $ret == *"onVerify called"* ]]; then
-			echoInfo "PASSED"
-		else
-			echoError "FAILED"
-			echoError "ret is $ret"
-		fi
-	fi
+    
 
-	if [[ $testDelete == 'true' ]]; then
-		echo "testing --delete"
-		ret=$("$newFileName" --delete --log-directory ./logging/logs)
-		if [[ $ret == *"onDelete called"* ]]; then
-			echoInfo "PASSED"
-		else
-			echoError "FAILED"
-			echoWarning "ret is:"
-			echo "$ret"
-		fi
-	fi
-
-	if [[ $testCreate == 'true' ]]; then
-		echo "testing --create"
-		ret=$("$newFileName" --create --log-directory ./logging/logs)
-		if [[ $ret == *"onCreate called"* ]]; then
-			echoInfo "PASSED"
-		else
-			echoError "FAILED"
-			echoError "ret is $ret"
-		fi
-	fi
-
-	if [[ $testInputFile == true ]]; then
-		echo "Testing Input File"
-		if [[ $optionalTestParameter == "Verify Test Parameter" ]]; then
-			echoInfo "PASSED"
-		else
-			echoError "FAILED: optional test parameter value: $optionalTestParameter.  Expected 'Verify Test Parameter"
-		fi
-	fi
-
-	#
-	#   the order matters - delete, then create, then verify
-	#
-
-	if [[ $delete == "true" ]]; then
-		onDelete
-	fi
-
-	if [[ $create == "true" ]]; then
-		onCreate
-	fi
-
-	if [[ $verify == "true" ]]; then
-		onVerify
-	fi
-    #if we created a new file, remove it
-	if [[ $loadParseSave == true ]]; then
-    	rm -f "$newFileName"
-	fi
     # --- END USER CODE ---
     time=$(date +"%m/%d/%y @ %r")
     echo "ended: $time"
 } | tee -a "${LOG_FILE}"
-
 
