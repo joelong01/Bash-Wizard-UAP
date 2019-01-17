@@ -30,6 +30,7 @@ namespace BashWizardConsole
             return $"{ShortName}|{LongName}: [RequiresInput={RequiresInput}] [Value={Value}]";
         }
 
+
     }
     public class InputValidation
     {
@@ -92,28 +93,6 @@ namespace BashWizardConsole
 
         }
 
-        public bool IsFlagSet(string flag)
-        {
-            if (ValidFlags.TryGetValue(flag, out Parameter parameter))
-            {
-                if (parameter.Value != "")
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
-        public string GetValue(string flag)
-        {
-            Parameter parameter = ValidFlags[flag];
-            return parameter.Value;
-        }
-
+      
     }
 }
