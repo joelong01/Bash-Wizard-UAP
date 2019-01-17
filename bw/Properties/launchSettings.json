@@ -2,7 +2,7 @@
   "profiles": {
     "bw": {
       "commandName": "Project",
-      "commandLineArgs": "-d ..\\bashWizardFiles\\createResourceGroup.sh.bw -r ./BashScripts/"
+      "commandLineArgs": "-k -i  E:\\GitHub\\Bash-Wizard\\Tests\\test.json"
     }
   }
 }

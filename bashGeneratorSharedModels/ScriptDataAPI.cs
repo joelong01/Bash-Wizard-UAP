@@ -224,7 +224,7 @@ namespace bashWizardShared
             sbBashScript.Replace("__USER_CODE_1__", this.UserCode);
             sbBashScript.Replace("\r", string.Empty);
             this.BashScript = sbBashScript.ToString();
-            this.JSON = JsonConvert.SerializeObject(this, Formatting.Indented);
+            this.JSON = this.ToJson();
             return true;
 
 
@@ -314,6 +314,21 @@ namespace bashWizardShared
             return sb.ToString();
         }
 
+        /// <summary>
+        ///     returns the JSON of the Parameter List
+        /// </summary>
+        /// <returns></returns>
+        public string ToJson()
+        {
+            return JsonConvert.SerializeObject(this, Formatting.Indented);
+        }
+
+        /// <summary>
+        ///     given a JSON string and the user code, generate a bash file
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="userCode"></param>
+        /// <returns></returns>
         public static ScriptData FromJson(string json, string userCode)
         {
             ScriptData scriptData = new ScriptData();
@@ -326,7 +341,7 @@ namespace bashWizardShared
                 //
                 //  Serialize is OptIn, deserialize is not.  so these will be reset
                 // scriptData.JSON = json;
-                scriptData.UserCode = userCode;  
+                scriptData.UserCode = userCode;
                 scriptData.GenerateBashScript = true;
                 scriptData.UpdateOnPropertyChanged = false;
                 scriptData.ToBash(); //this will set the JSON
@@ -355,7 +370,7 @@ namespace bashWizardShared
         ///     Given a bash file, create a ScriptData object.  This is the "parse a bash script" function
         /// </summary>
         /// <param name="bash"></param>
-      
+
         public static ScriptData FromBash(string input)
         {
             ScriptData scriptData = new ScriptData();
