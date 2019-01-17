@@ -240,14 +240,14 @@ namespace bashWizardShared
                 {
                     if (param.ShortParameter == "" || param.LongParameter == "" || param.VariableName == "")
                     {
-                        AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: All Long Names, Short Names, and Variable Names must be non-empty."));
+                        AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"Parameter[{Parameters.IndexOf(param)}]: All Long Names, Short Names, and Variable Names must be non-empty."));
                     }
                 }
 
                 if (nameDictionary.TryGetValue(param.ShortParameter, out item))
                 {
                     var otherIndex = Parameters.IndexOf(item);
-                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The name \"{param.ShortParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"Parameter[{Parameters.IndexOf(param)}]: The name \"{param.ShortParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
                 }
                 else
                 {
@@ -256,7 +256,7 @@ namespace bashWizardShared
                 if (nameDictionary.TryGetValue(param.LongParameter, out item))
                 {
                     var otherIndex = Parameters.IndexOf(item);
-                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The name \"{param.LongParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"Parameter[{Parameters.IndexOf(param)}]: The name \"{param.LongParameter}\" already exists for the parameter with index={otherIndex}. All Long Names and Short Names must be unique."));
                 }
                 else
                 {
@@ -265,7 +265,7 @@ namespace bashWizardShared
                 if (variableDictionary.TryGetValue(param.VariableName, out item))
                 {
                     var otherIndex = Parameters.IndexOf(item);
-                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: The variable \"{param.VariableName}\" already exists for the parameter with index={otherIndex}. All Variable Names must be unique."));
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"Parameter[{Parameters.IndexOf(param)}]: The variable \"{param.VariableName}\" already exists for the parameter with index={otherIndex}. All Variable Names must be unique."));
                 }
                 else
                 {
@@ -275,7 +275,7 @@ namespace bashWizardShared
 
                 if (!param.RequiresInputString && param.ValueIfSet.Trim() == "$2")
                 {
-                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"{Parameters.IndexOf(param)}: {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed."));
+                    AddValidationError(param, new ParseErrorInfo(ErrorLevel.Validation, $"Parameter[{Parameters.IndexOf(param)}]: {param.LongParameter} has \"Require Input String\" set to False and the \"Value if Set\" to \"$2\".  \nThis combination is not allowed."));
                 }
 
             }

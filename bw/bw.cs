@@ -16,7 +16,8 @@ namespace BashWizardConsole
             "dotnet ../Binaries/bw.dll -c > foo.json",
             "cat foo.json | dotnet ../Binaries/bw.dll > foo.sh #takes the file foo.json, passes it to bw which will output a foo.batch file with those parameters",
             "curl myBaseParams.json | dotnet ../Binaries/bw.dll --merge-params ./localParams.Json > foo.sh # download myBaseParams.Json, parses it and merges in the parameters in localParams.json and then outputs it to foo.sh",
-            "cat foo.sh | dotnet ../Binaries/bw.dll # parses foo.sh and echos to stdout an updated foo.sh script"
+            "cat foo.sh | dotnet ../Binaries/bw.dll # parses foo.sh and echo's to stdout an updated foo.sh script",
+            "curl https://raw.githubusercontent.com/joelong01/Bash-Wizard/bwWork/Tests/example1.sh | dotnet ../Binaries/bw.dll --add-parameters ./example2.json"
 
         };
 
@@ -98,7 +99,37 @@ namespace BashWizardConsole
                             // \"cat foo.sh | bw -j\", \" cat foo.sh | bw -j > foo.json\", or \"cat foo.sh | bw -j -o foo.json\""
                             (inputContents, outputFileName) = GetInputAndOutputValues(input, stdin);
                             OutputJson(inputContents, outputFileName);
+                            break;
+                        case "AddParameters":
+                            (inputContents, outputFileName) = GetInputAndOutputValues(input, stdin);
+                            if (!File.Exists(kvp.Value.Value))
+                            {
+                                throw new Exception($"--add-parameter Error: specified file does not exist: {kvp.Value.Value}");
+                            }
+                            //
+                            //  convert the input into a ScriptData
+                            var scriptData = FromFileContents(inputContents);
+                            CheckForParseErrors(scriptData);
 
+                            //
+                            //  open the merge file - could be JSON or Bash
+                            string mergeJson = File.ReadAllText(kvp.Value.Value);                                                        
+                            var sdFromJson = FromFileContents(mergeJson);
+                            CheckForParseErrors(sdFromJson);
+
+                            //
+                            //  add the parameters to the input
+                            scriptData.Parameters.AddRange(sdFromJson.Parameters);
+                            CheckForParseErrors(scriptData);
+                            scriptData.ToBash();                            
+                            if (outputFileName == "")
+                            {
+                                Console.WriteLine(scriptData.BashScript);
+                            }
+                            else
+                            {
+                                File.WriteAllText(outputFileName, scriptData.BashScript);
+                            }
                             break;
                         case "InputFile":
                         case "OutputFile":
@@ -141,7 +172,29 @@ namespace BashWizardConsole
                 Console.ForegroundColor = fg;
             }
         }
+        /// <summary>
+        ///     support the ~/ path for Unix boxes
+        /// </summary>
+        /// <param name="path">the path passed in with -o or -i</param>
+        /// <returns></returns>
+        private static string ResolvePath(string path)
+        {
+            string resolvedPath;
+            if (path.StartsWith("~/"))
+            {
+                var homePath = (Environment.OSVersion.Platform == PlatformID.Unix ||
+                    Environment.OSVersion.Platform == PlatformID.MacOSX)
+                    ? Environment.GetEnvironmentVariable("HOME")
+                    : Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
 
+                resolvedPath = homePath + path.Substring(1);
+            }
+            else
+            {
+                resolvedPath = path;
+            }
+            return resolvedPath;
+        }
 
         /// <summary>
         ///  take the input and stdin and parse and return the contents of the input and the output filename
@@ -165,6 +218,7 @@ namespace BashWizardConsole
             // always get contents to make the functions consistent when input is piped in
             if (input.SetFlags.TryGetValue("InputFile", out Parameter param))
             {
+                param.Value = ResolvePath(param.Value);
                 if (File.Exists(param.Value))
                 {
                     inputContents = File.ReadAllText(param.Value); // this can throw
@@ -192,7 +246,7 @@ namespace BashWizardConsole
 
             if (input.SetFlags.TryGetValue("OutputFile", out param))
             {
-                outputFileName = param.Value;
+                outputFileName = ResolvePath(param.Value);
                 if (outputFileName.ToLower() == "stdin")
                 {
                     outputFileName = "";
@@ -210,21 +264,29 @@ namespace BashWizardConsole
         private static void OutputJson(string inputContents, string outputFileName)
         {
             var scriptData = ScriptData.FromBash(inputContents);
-            if (scriptData.ParseErrors.Count > 0)
-            {
-                foreach (var error in scriptData.ParseErrors)
-                {
-                    EchoError($"Error: {error.Message}");
-                }
-                throw new Exception("Please fix the errors and try again");
-            }
+            CheckForParseErrors(scriptData);
             if (outputFileName == "")
             {
                 Console.WriteLine(scriptData.ToJson());
+                Console.WriteLine("");
             }
             else
             {
                 File.WriteAllText(outputFileName, scriptData.ToJson());
+            }
+        }
+
+        private static void CheckForParseErrors(ScriptData scriptData)
+        {
+            if (scriptData.ParseErrors.Count > 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var error in scriptData.ParseErrors)
+                {
+                    sb.Append($"{error}");
+                }
+                sb.Append("Please fix the errors and try again");
+                throw new Exception(sb.ToString());
             }
         }
 
@@ -332,7 +394,7 @@ namespace BashWizardConsole
                 //
                 //  if there is an error, we'll echo the Usage and what we parsed 
                 string s = UsageString(parameters) + "\n";
-                s += ParsedCommandLine(input) + "\n";
+                s += ParsedCommandLine(input, parameters) + "\n";
                 foreach (var e in errors)
                 {
                     s += e + "\n";
@@ -524,13 +586,15 @@ namespace BashWizardConsole
             return sb.ToString();
         }
 
-        private static string ParsedCommandLine(InputValidation input)
+        private static string ParsedCommandLine(InputValidation input, Parameter[] parameters)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("Parsed Command Line:\n\n");
-            foreach (var kvp in input.ValidFlags)
+            var (maxLongParam, maxDescription) = GetLongestParameter(parameters);
+            maxLongParam += 15;
+            foreach (var parameter in parameters)
             {
-                sb.Append($"\t{kvp.Value.ShortName} | {kvp.Value.LongName.PadRight(15, '.')} {kvp.Value.Value}\n");
+                sb.Append($"\t{parameter.ShortName} | {parameter.LongName.PadRight(maxLongParam, '.')} {input.ValidFlags[parameter.Name].Value}\n");
             }
             sb.Append("\n");
 
