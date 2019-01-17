@@ -17,7 +17,7 @@ namespace BashWizardConsole
             "cat foo.json | dotnet ../Binaries/bw.dll > foo.sh #takes the file foo.json, passes it to bw which will output a foo.batch file with those parameters",
             "curl myBaseParams.json | dotnet ../Binaries/bw.dll --merge-params ./localParams.Json > foo.sh # download myBaseParams.Json, parses it and merges in the parameters in localParams.json and then outputs it to foo.sh",
             "cat foo.sh | dotnet ../Binaries/bw.dll # parses foo.sh and echo's to stdout an updated foo.sh script",
-            "curl https://raw.githubusercontent.com/joelong01/Bash-Wizard/bwWork/Tests/example1.sh | dotnet ../Binaries/bw.dll --add-parameters ./example2.json"
+            "curl https://raw.githubusercontent.com/joelong01/Bash-Wizard/master/Tests/example1.sh | dotnet ../Binaries/bw.dll --add-parameters ./example2.json"
 
         };
 
