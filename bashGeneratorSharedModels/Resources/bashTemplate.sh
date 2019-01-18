@@ -88,7 +88,7 @@ __PARSE_INPUT_FILE__
 __REQUIRED_PARAMETERS__
 __LOGGING_SUPPORT_
 
-    echoInput
+__CALL_ECHOINPUT__
     # --- BEGIN USER CODE ---
 __USER_CODE_1__
     # --- END USER CODE ---
