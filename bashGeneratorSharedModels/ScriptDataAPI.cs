@@ -210,6 +210,8 @@ namespace bashWizardShared
             sbBashScript.Replace("__LOGGING_SUPPORT_", logTemplate.ToString());
             sbBashScript.Replace("__END_LOGGING_SUPPORT__", this.LoggingSupport ? endLogTemplate.ToString() : "");
 
+            sbBashScript.Replace("__CALL_ECHOINPUT__", this.EchoInput ? "   echoInput" : "");
+
             if (this.CreateVerifyDelete)
             {
                 if (!ScriptData.FunctionExists(this.UserCode, "onVerify") && !ScriptData.FunctionExists(this.UserCode, "onDelete") && !ScriptData.FunctionExists(this.UserCode, "onCreate"))
@@ -481,6 +483,7 @@ namespace bashWizardShared
                     }
                 }
 
+                scriptData.EchoInput = (bashWizardCode.IndexOf("    echoInput") > 0);
 
                 //
                 //  find the usage() function and parse it out - this gives us the 4 properties in the ParameterItem below

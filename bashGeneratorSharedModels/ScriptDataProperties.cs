@@ -49,6 +49,7 @@ namespace bashWizardShared
                     NotifyPropertyChanged("LoggingSupport");
                     NotifyPropertyChanged("AcceptsInputFile");
                     NotifyPropertyChanged("CreateVerifyDelete");
+                    NotifyPropertyChanged("EchoInput");
                     NotifyPropertyChanged("Warnings");
                     NotifyPropertyChanged("JSON");
                     GenerateBashScript = oldGenerateBashScript;
@@ -110,7 +111,20 @@ namespace bashWizardShared
             return false;
         }
 
-
+        private bool _EchoInput = true;
+        [JsonProperty]
+        public bool EchoInput
+        {
+            get => _EchoInput;
+            set
+            {
+                if (_EchoInput != value)
+                {
+                    _EchoInput = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
 
         private string _Version = "0.906";
